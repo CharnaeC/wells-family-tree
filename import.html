@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <title>GEDCOM Importer | Wells Family Tree</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="hero tree-hero">
+  <h1>🌳 Wells Family Tree</h1>
+  <p class="tagline">Privacy-Safe GEDCOM Importer</p>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="tree.html">Family Tree</a>
+  </nav>
+</header>
+
+<main class="tree-page">
+  <section class="tree-tools importer-panel">
+    <h2>Create a safe family-data file</h2>
+
+    <p>
+      Your GEDCOM is processed only inside your browser. It is not uploaded
+      by this page. Living relatives are converted to first name plus last
+      initial, and sensitive dates and places are removed.
+    </p>
+
+    <label for="gedcomFile">Choose your MyHeritage GEDCOM file</label>
+    <input id="gedcomFile" type="file" accept=".ged,.gedcom,text/plain">
+
+    <div class="import-options">
+      <label>
+        <input id="includeLivingNotes" type="checkbox" checked>
+        Include notes/biographies for living relatives
+      </label>
+
+      <label>
+        <input id="includeDeceasedDetails" type="checkbox" checked>
+        Include dates, places, notes and relationships for deceased relatives
+      </label>
+    </div>
+
+    <button id="convertButton" type="button">Convert GEDCOM</button>
+
+    <p id="importStatus" class="search-message" aria-live="polite"></p>
+
+    <div id="importSummary" class="profile-connections" hidden></div>
+
+    <button id="downloadButton" type="button" class="secondary-button" hidden>
+      Download family.json
+    </button>
+  </section>
+
+  <section class="tree-introduction">
+    <p>
+      After downloading <strong>family.json</strong>, upload it to a
+      <strong>data</strong> folder in your GitHub repository. Do not upload
+      the original GEDCOM to the public repository.
+    </p>
+  </section>
+</main>
+
+<footer>
+  Made with ❤️ for the Wells Family
+</footer>
+
+<script src="scripts/gedcom-importer.js"></script>
+</body>
+</html>

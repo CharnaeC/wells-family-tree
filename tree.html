@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="description"
+    content="Explore the Wells Family Tree."
+  >
+
+  <title>Family Tree | Wells Family Tree</title>
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header class="hero tree-hero">
+  <h1>🌳 Wells Family Tree</h1>
+
+  <p class="tagline">
+    Explore Our Family Connections
+  </p>
+
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="tree.html" aria-current="page">Family Tree</a>
+    <a href="stories.html">Stories</a>
+    <a href="gallery.html">Gallery</a>
+  </nav>
+</header>
+
+<main class="tree-page">
+
+  <section class="tree-introduction">
+    <p>
+      Search for a relative or select a family member to view their
+      profile. Use the plus and minus buttons to open or close branches.
+    </p>
+  </section>
+
+  <section class="tree-tools" aria-label="Family-tree tools">
+
+    <label for="familySearch">Search the family tree</label>
+
+    <div class="search-row">
+      <input
+        type="search"
+        id="familySearch"
+        placeholder="Enter a relative’s name..."
+        autocomplete="off"
+      >
+
+      <button id="searchButton" type="button">
+        Search
+      </button>
+
+      <button id="clearSearchButton" type="button" class="secondary-button">
+        Clear
+      </button>
+    </div>
+
+    <p id="searchMessage" class="search-message" aria-live="polite"></p>
+
+  </section>
+
+  <section class="tree-panel">
+
+    <div class="tree-panel-heading">
+      <div>
+        <p class="eyebrow">Family connections</p>
+        <h2>Wells Family Tree</h2>
+      </div>
+
+      <button id="expandAllButton" type="button" class="secondary-button">
+        Expand all
+      </button>
+    </div>
+
+    <div
+      id="familyTree"
+      class="family-tree"
+      aria-label="Interactive Wells family tree"
+    ></div>
+
+  </section>
+
+</main>
+
+<div
+  id="profileModal"
+  class="profile-modal"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="profileName"
+  hidden
+>
+  <div class="profile-card">
+
+    <button
+      id="closeProfileButton"
+      class="profile-close"
+      type="button"
+      aria-label="Close profile"
+    >
+      ×
+    </button>
+
+    <img
+      id="profilePhoto"
+      class="profile-photo"
+      src=""
+      alt=""
+    >
+
+    <p id="profileStatus" class="profile-status"></p>
+
+    <h2 id="profileName"></h2>
+
+    <p id="profileBiography"></p>
+
+    <div class="profile-connections">
+      <h3>Family Connections</h3>
+      <div id="profileConnections"></div>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  Made with ❤️ for the Wells Family
+</footer>
+
+<script src="scripts/tree.js"></script>
+
+</body>
+</html>

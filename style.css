@@ -1,0 +1,55 @@
+body{
+font-family:Arial,Helvetica,sans-serif;
+margin:0;
+background:#f7f5ef;
+color:#333;
+}
+
+.hero{
+background:#234b34;
+color:white;
+text-align:center;
+padding:60px 20px;
+}
+
+.tagline{
+font-size:1.1rem;
+opacity:.9;
+}
+
+nav{
+margin-top:25px;
+}
+
+nav a{
+color:white;
+text-decoration:none;
+margin:0 18px;
+font-weight:bold;
+}
+
+.welcome{
+max-width:900px;
+margin:auto;
+padding:60px 25px;
+text-align:center;
+}
+
+.button{
+display:inline-block;
+background:#b38b2d;
+color:white;
+padding:14px 28px;
+text-decoration:none;
+border-radius:8px;
+font-weight:bold;
+margin-top:25px;
+}
+
+footer{
+background:#234b34;
+color:white;
+text-align:center;
+padding:20px;
+margin-top:60px;
+}

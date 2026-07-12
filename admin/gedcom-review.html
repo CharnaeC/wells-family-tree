@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta name="robots" content="noindex,nofollow">
+
+  <title>Review GEDCOM | Wells Family Archive</title>
+
+  <link rel="stylesheet" href="../style.css">
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #f7f5ef;
+      color: #333;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    header {
+      padding: 28px 24px;
+      text-align: center;
+      color: white;
+      background: #234b34;
+    }
+
+    main {
+      width: min(900px, 92%);
+      margin: 35px auto;
+    }
+
+    .panel {
+      padding: 26px;
+      background: white;
+      border: 1px solid #e2ddcf;
+      border-radius: 16px;
+    }
+
+    h2 {
+      color: #234b34;
+    }
+
+    label {
+      display: block;
+      margin: 18px 0 8px;
+      color: #234b34;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #aaa;
+      border-radius: 8px;
+      font: inherit;
+    }
+
+    button,
+    .back-link {
+      display: inline-block;
+      margin-top: 18px;
+      padding: 12px 18px;
+      text-decoration: none;
+      color: white;
+      background: #234b34;
+      border: 0;
+      border-radius: 8px;
+      cursor: pointer;
+      font: inherit;
+      font-weight: bold;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 24px;
+    }
+
+    .summary-card {
+      padding: 18px;
+      background: #f3eddd;
+      border-radius: 12px;
+    }
+
+    .summary-card span {
+      display: block;
+      color: #666;
+      font-size: 0.85rem;
+    }
+
+    .summary-card strong {
+      display: block;
+      margin-top: 6px;
+      color: #234b34;
+      font-size: 1.7rem;
+    }
+
+    .warning-card {
+      background: #fff2d9;
+    }
+
+    .message {
+      min-height: 24px;
+      margin-top: 18px;
+    }
+
+    .error {
+      color: #a12828;
+    }
+
+    .review-note {
+      margin-top: 24px;
+      padding: 16px;
+      background: #faf8f2;
+      border-left: 4px solid #b38b2d;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    @media (max-width: 700px) {
+      .summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 440px) {
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Review GEDCOM Import</h1>
+
+    <p>
+      Compare staged genealogy data with the permanent archive.
+    </p>
+  </header>
+
+  <main>
+    <section class="panel">
+      <a class="back-link" href="./dashboard.html">
+        ← Back to dashboard
+      </a>
+
+      <label for="importJobId">
+        Import job ID
+      </label>
+
+      <input
+        id="importJobId"
+        type="text"
+        placeholder="Paste the import job ID from the staging page"
+      >
+
+      <button id="reviewButton" type="button">
+        Review staged import
+      </button>
+
+      <p id="message" class="message" aria-live="polite"></p>
+
+      <section id="results" hidden>
+        <h2>Review summary</h2>
+
+        <div class="summary-grid">
+          <article class="summary-card">
+            <span>Total staged people</span>
+            <strong id="totalPeople">0</strong>
+          </article>
+
+          <article class="summary-card">
+            <span>New people</span>
+            <strong id="newPeople">0</strong>
+          </article>
+
+          <article class="summary-card">
+            <span>Existing people</span>
+            <strong id="existingPeople">0</strong>
+          </article>
+
+          <article class="summary-card warning-card">
+            <span>Possible duplicates</span>
+            <strong id="duplicateCount">0</strong>
+          </article>
+
+          <article class="summary-card">
+            <span>Relationships</span>
+            <strong id="relationshipCount">0</strong>
+          </article>
+
+          <article class="summary-card">
+            <span>Import status</span>
+            <strong id="importStatus">—</strong>
+          </article>
+        </div>
+
+        <div class="review-note">
+          No permanent people or relationships have been changed.
+          The approval step will be added after this review is verified.
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script type="module">
+    import { createClient } from
+      "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+    import {
+      SUPABASE_URL,
+      SUPABASE_PUBLISHABLE_KEY
+    } from "../scripts/supabase-config.js";
+
+    const supabase = createClient(
+      SUPABASE_URL,
+      SUPABASE_PUBLISHABLE_KEY
+    );
+
+    const importJobInput =
+      document.getElementById("importJobId");
+
+    const reviewButton =
+      document.getElementById("reviewButton");
+
+    const message =
+      document.getElementById("message");
+
+    const results =
+      document.getElementById("results");
+
+    const params =
+      new URLSearchParams(window.location.search);
+
+    const jobIdFromUrl = params.get("id");
+
+    if (jobIdFromUrl) {
+      importJobInput.value = jobIdFromUrl;
+    }
+
+    async function requireSession() {
+      const { data, error } =
+        await supabase.auth.getSession();
+
+      if (error) {
+        throw error;
+      }
+
+      if (!data.session?.user) {
+        window.location.replace("./login.html");
+
+        throw new Error(
+          "Your administrator session has expired."
+        );
+      }
+    }
+
+    reviewButton.addEventListener(
+      "click",
+      async () => {
+        const importJobId =
+          importJobInput.value.trim();
+
+        if (!importJobId) {
+          message.textContent =
+            "Enter the import job ID.";
+
+          message.classList.add("error");
+          return;
+        }
+
+        reviewButton.disabled = true;
+        message.textContent =
+          "Reviewing staged GEDCOM…";
+
+        message.classList.remove("error");
+        results.hidden = true;
+
+        try {
+          await requireSession();
+
+          const { data, error } =
+            await supabase.rpc(
+              "review_gedcom_import",
+              {
+                p_import_job_id: importJobId
+              }
+            );
+
+          if (error) {
+            throw error;
+          }
+
+          document.getElementById(
+            "totalPeople"
+          ).textContent =
+            data.total_people ?? 0;
+
+          document.getElementById(
+            "newPeople"
+          ).textContent =
+            data.new_people ?? 0;
+
+          document.getElementById(
+            "existingPeople"
+          ).textContent =
+            data.existing_people ?? 0;
+
+          document.getElementById(
+            "duplicateCount"
+          ).textContent =
+            data.possible_duplicates ?? 0;
+
+          document.getElementById(
+            "relationshipCount"
+          ).textContent =
+            data.relationships ?? 0;
+
+          document.getElementById(
+            "importStatus"
+          ).textContent =
+            data.status ?? "Unknown";
+
+          results.hidden = false;
+
+          message.textContent =
+            "Review complete. No permanent records were changed.";
+        } catch (error) {
+          console.error(error);
+
+          message.textContent =
+            error.message ||
+            "The staged import could not be reviewed.";
+
+          message.classList.add("error");
+        } finally {
+          reviewButton.disabled = false;
+        }
+      }
+    );
+
+    if (jobIdFromUrl) {
+      reviewButton.click();
+    }
+  </script>
+</body>
+</html>

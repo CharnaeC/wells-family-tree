@@ -28,7 +28,10 @@ const profileConnections = document.getElementById("profileConnections");
 let familyData = null;
 let peopleById = new Map();
 let isEverythingExpanded = true;
-
+const ROOT_PERSON_IDS = [
+  "I500071",
+  "I500194"
+];
 async function loadFamilyData() {
   try {
     const response = await fetch("data/family.json", {

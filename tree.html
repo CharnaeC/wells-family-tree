@@ -19,32 +19,53 @@
     <a href="gallery.html">Gallery</a>
   </nav>
 </header>
-<main class="tree-page nested-tree-page">
+
+<main class="tree-page hybrid-tree-page">
   <section class="tree-introduction">
-    <p>Nathaniel Wells and William Wells begin the tree below. Select any child to reveal the next generation, then keep selecting relatives to continue down that line.</p>
+    <p>
+      Nathaniel Wells and William Wells begin the tree below. Select any
+      relative to reveal or hide the next generation in that family line.
+    </p>
   </section>
+
   <section class="tree-tools">
     <label for="familySearch">Search the Wells Family Tree</label>
     <div class="search-row">
-      <input id="familySearch" type="search" placeholder="Enter a relative’s name..." autocomplete="off">
+      <input id="familySearch" type="search"
+        placeholder="Enter a relative’s name..." autocomplete="off">
       <button id="searchButton" type="button">Search</button>
-      <button id="clearSearchButton" type="button" class="secondary-button">Clear</button>
+      <button id="clearSearchButton" type="button" class="secondary-button">
+        Clear
+      </button>
     </div>
     <p id="searchMessage" class="search-message" aria-live="polite"></p>
   </section>
-  <section id="founderBranches" class="nested-founder-branches"><p>Loading family tree…</p></section>
-  <p class="branch-home-instruction">Select a person to reveal or hide their children ▼</p>
+
+  <section id="founderBranches" class="hybrid-founder-branches">
+    <p>Loading family tree…</p>
+  </section>
+
+  <p class="branch-home-instruction">
+    Select a person to reveal or hide their children ▼
+  </p>
 </main>
-<div id="profileModal" class="profile-modal" role="dialog" aria-modal="true" aria-labelledby="profileName" hidden>
+
+<div id="profileModal" class="profile-modal" role="dialog"
+  aria-modal="true" aria-labelledby="profileName" hidden>
   <div class="profile-card">
-    <button id="closeProfileButton" class="profile-close" type="button" aria-label="Close profile">×</button>
+    <button id="closeProfileButton" class="profile-close" type="button"
+      aria-label="Close profile">×</button>
     <img id="profilePhoto" class="profile-photo" src="" alt="">
     <p id="profileStatus" class="profile-status"></p>
     <h2 id="profileName"></h2>
     <p id="profileBiography"></p>
-    <div class="profile-connections"><h3>Family Connections</h3><div id="profileConnections"></div></div>
+    <div class="profile-connections">
+      <h3>Family Connections</h3>
+      <div id="profileConnections"></div>
+    </div>
   </div>
 </div>
+
 <footer>Made with ❤️ for the Wells Family</footer>
 <script src="scripts/tree-home.js"></script>
 </body>

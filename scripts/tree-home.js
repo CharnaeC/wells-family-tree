@@ -329,16 +329,16 @@ function createCard(person, options) {
   profile.setAttribute("role", "button");
   profile.setAttribute("aria-label", `View ${person.displayName} profile`);
   profile.addEventListener("click", (event) => {
-    event.stopPropagation();
-    openProfile(person);
+  event.stopPropagation();
+
+  openTreeProfile({
+    person,
+    publicProfileMap,
+    fallback: openProfile
   });
+});
 
   card.appendChild(profile);
-
-  if (!options.expandable) {
-    card.addEventListener("click", () => openProfile(person));
-  }
-
   return card;
 }
 

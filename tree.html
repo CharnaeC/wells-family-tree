@@ -3,14 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Explore the Wells family branches.">
+  <meta name="description" content="Explore the Wells Family Tree.">
   <title>Family Tree | Wells Family Tree</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="tree-view.css">
 </head>
 <body>
 <header class="hero tree-hero">
   <h1>🌳 Wells Family Tree</h1>
-  <p class="tagline">Choose a family branch to explore</p>
+  <p class="tagline">Select a child to reveal their descendant line</p>
   <nav>
     <a href="index.html">Home</a>
     <a href="tree.html" aria-current="page">Family Tree</a>
@@ -18,24 +19,37 @@
     <a href="gallery.html">Gallery</a>
   </nav>
 </header>
-<main class="tree-page branch-home-page">
+<main class="tree-page inline-tree-page">
   <section class="tree-introduction">
-    <p>Nathaniel Wells and William Wells begin the family tree below. Select any child to view every descendant generation connected to that branch.</p>
+    <p>Nathaniel Wells and William Wells begin the tree below. Select one of their children to expand or collapse that complete family line.</p>
   </section>
   <section class="tree-tools">
-    <label for="branchSearch">Search these family branches</label>
+    <label for="familySearch">Search the Wells Family Tree</label>
     <div class="search-row">
-      <input id="branchSearch" type="search" placeholder="Search by name..." autocomplete="off">
-      <button id="branchSearchButton" type="button">Search</button>
-      <button id="branchClearButton" type="button" class="secondary-button">Clear</button>
+      <input id="familySearch" type="search" placeholder="Enter a relative’s name..." autocomplete="off">
+      <button id="searchButton" type="button">Search</button>
+      <button id="clearSearchButton" type="button" class="secondary-button">Clear</button>
     </div>
-    <p id="branchSearchMessage" class="search-message" aria-live="polite"></p>
+    <p id="searchMessage" class="search-message" aria-live="polite"></p>
   </section>
-  <section id="founderBranches" class="founder-branches" aria-label="Wells family branches">
-    <p>Loading family branches…</p>
+  <section id="founderBranches" class="inline-founder-branches">
+    <p>Loading family tree…</p>
   </section>
-  <p class="branch-home-instruction">Click any child to continue ▼</p>
+  <p class="branch-home-instruction">Select any child to reveal or hide their descendants ▼</p>
 </main>
+<div id="profileModal" class="profile-modal" role="dialog" aria-modal="true" aria-labelledby="profileName" hidden>
+  <div class="profile-card">
+    <button id="closeProfileButton" class="profile-close" type="button" aria-label="Close profile">×</button>
+    <img id="profilePhoto" class="profile-photo" src="" alt="">
+    <p id="profileStatus" class="profile-status"></p>
+    <h2 id="profileName"></h2>
+    <p id="profileBiography"></p>
+    <div class="profile-connections">
+      <h3>Family Connections</h3>
+      <div id="profileConnections"></div>
+    </div>
+  </div>
+</div>
 <footer>Made with ❤️ for the Wells Family</footer>
 <script src="scripts/tree-home.js"></script>
 </body>

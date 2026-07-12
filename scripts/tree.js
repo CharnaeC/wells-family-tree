@@ -74,17 +74,19 @@ function getPersonName(personId) {
 }
 
 function findRootPeople() {
-  const childIds = new Set();
+  const selectedRoots = ROOT_PERSON_IDS
+    .map((personId) => peopleById.get(personId))
+    .filter(Boolean);
 
-  familyData.people.forEach((person) => {
-    person.children?.forEach((childId) => childIds.add(childId));
-  });
+  if (selectedRoots.length > 0) {
+    return selectedRoots;
+  }
 
-  const roots = familyData.people.filter(
-    (person) => !childIds.has(person.id)
+  console.warn(
+    "The selected root relatives were not found. Showing the first available relative."
   );
 
-  return roots.length > 0 ? roots : familyData.people.slice(0, 1);
+  return familyData.people.slice(0, 1);
 }
 
 function createPersonNode(person, visited = new Set()) {

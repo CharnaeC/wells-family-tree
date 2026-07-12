@@ -1,24 +1,287 @@
-/* Nested accordion descendant tree */
-.nested-tree-page{width:min(1260px,95%)}
-.nested-founder-branches{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:32px;margin-top:34px}
-.nested-founder-section{min-width:0;padding:26px 20px;background:#fffdf8;border:1px solid #e2ddcf;border-radius:18px;box-shadow:0 8px 28px rgba(35,75,52,.08)}
-.nested-founder-card,.nested-person-card{position:relative;display:flex;align-items:center;flex-direction:column;gap:10px;text-align:center;color:#333;cursor:pointer}
-.nested-founder-card{width:min(300px,100%);margin:0 auto;padding:18px;background:#f3eddd;border:2px solid #c9b77d;border-radius:16px}
-.nested-person-card{width:100%;min-height:158px;padding:15px 10px 36px;background:white;border:1px solid #ddd3b7;border-radius:14px;transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease}
-.nested-person-card:hover,.nested-person-card:focus,.nested-person-card.expanded-person-card,.tree-search-match{transform:translateY(-2px);outline:none;border-color:#b38b2d;box-shadow:0 8px 18px rgba(35,75,52,.12)}
-.nested-person-card.expanded-person-card{background:#fff6db;border-width:2px}
-.nested-person-text{display:flex;align-items:center;flex-direction:column;gap:6px}
-.nested-person-text strong{overflow-wrap:anywhere;color:#234b34}
-.branch-action-label{color:#8a691d;font-size:.82rem;font-weight:bold}
-.profile-button{position:absolute;right:10px;bottom:9px;left:10px;padding:5px 8px;color:#234b34;background:#ece7dc;border-radius:7px;font-size:.78rem;font-weight:bold}
-.founder-photo,.branch-child-photo{display:grid;place-items:center;overflow:hidden;object-fit:cover;border:4px solid white;border-radius:50%;background:#234b34;color:white;box-shadow:0 0 0 2px #b38b2d;font-weight:bold}
-.founder-photo{width:86px;height:86px;font-size:1.3rem}.branch-child-photo{width:62px;height:62px;font-size:1rem}
-.founder-stem,.nested-descendant-stem{width:2px;margin:0 auto;background:#c9b77d}.founder-stem{height:30px}.nested-descendant-stem{height:28px}
-.nested-child-row{position:relative;display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));align-items:start;gap:14px;padding-top:20px}
-.nested-child-row::before{position:absolute;top:0;left:6%;width:88%;height:2px;background:#c9b77d;content:""}
-.nested-branch-node{position:relative;min-width:0}.nested-branch-node::before{position:absolute;top:-20px;left:50%;width:2px;height:20px;background:#c9b77d;content:""}
-.nested-descendants{margin-top:14px;padding:18px 14px 12px;background:#f7f3e9;border:1px solid #e1d7bb;border-radius:14px}
-.nested-generation-row{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}.person-initials{user-select:none}
-@media(max-width:900px){.nested-founder-branches{grid-template-columns:1fr}}
-@media(max-width:620px){.nested-child-row,.nested-generation-row{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:420px){.nested-child-row,.nested-generation-row{grid-template-columns:1fr}}
+/* Wells Family Tree — hybrid expanding descendant layout */
+
+.hybrid-tree-page {
+  width: min(1260px, 95%);
+}
+
+.hybrid-founder-branches {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 32px;
+  margin-top: 34px;
+}
+
+.hybrid-founder-section {
+  min-width: 0;
+  padding: 26px 20px;
+  background: #fffdf8;
+  border: 1px solid #e2ddcf;
+  border-radius: 18px;
+  box-shadow: 0 8px 28px rgba(35, 75, 52, 0.08);
+}
+
+.founder-card,
+.person-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 10px;
+  text-align: center;
+  color: #333;
+  cursor: pointer;
+}
+
+.founder-card {
+  width: min(300px, 100%);
+  margin: 0 auto;
+  padding: 18px 18px 42px;
+  background: #f3eddd;
+  border: 2px solid #c9b77d;
+  border-radius: 16px;
+}
+
+.person-card {
+  width: 100%;
+  min-height: 176px;
+  padding: 15px 10px 40px;
+  background: white;
+  border: 1px solid #ddd3b7;
+  border-radius: 14px;
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.person-card:hover,
+.person-card:focus,
+.person-card.expanded-card,
+.search-match {
+  transform: translateY(-2px);
+  outline: none;
+  border-color: #b38b2d;
+  box-shadow: 0 8px 18px rgba(35, 75, 52, 0.12);
+}
+
+.person-card.expanded-card {
+  background: #fff6db;
+  border-width: 2px;
+}
+
+.person-photo-wrap {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 4px solid white;
+  border-radius: 50%;
+  background: #234b34;
+  color: white;
+  box-shadow: 0 0 0 2px #b38b2d;
+  font-weight: bold;
+}
+
+.person-photo-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.founder-photo {
+  width: 88px;
+  height: 88px;
+}
+
+.person-photo {
+  width: 66px;
+  height: 66px;
+}
+
+.person-initials {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  font-size: 1rem;
+}
+
+.card-body {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.card-body strong {
+  overflow-wrap: anywhere;
+  color: #234b34;
+}
+
+.relationship-label {
+  color: #676767;
+  font-size: 0.76rem;
+}
+
+.expand-label {
+  color: #8a691d;
+  font-size: 0.82rem;
+  font-weight: bold;
+}
+
+.profile-link {
+  position: absolute;
+  right: 10px;
+  bottom: 9px;
+  left: 10px;
+  padding: 6px 8px;
+  color: #234b34;
+  background: #ece7dc;
+  border-radius: 7px;
+  font-size: 0.78rem;
+  font-weight: bold;
+}
+
+.founder-stem {
+  width: 2px;
+  height: 30px;
+  margin: 0 auto;
+  background: #c9b77d;
+}
+
+.founder-child-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  align-items: start;
+  gap: 14px;
+  padding-top: 20px;
+}
+
+.founder-child-grid::before {
+  position: absolute;
+  top: 0;
+  left: 6%;
+  width: 88%;
+  height: 2px;
+  background: #c9b77d;
+  content: "";
+}
+
+.branch-node {
+  position: relative;
+  min-width: 0;
+}
+
+.branch-node::before {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  width: 2px;
+  height: 20px;
+  background: #c9b77d;
+  content: "";
+}
+
+.descendant-panel {
+  margin-top: 14px;
+  padding: 16px 12px 12px;
+  background: #f7f3e9;
+  border: 1px solid #e1d7bb;
+  border-radius: 14px;
+}
+
+.relationship-connector {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  min-height: 34px;
+}
+
+.relationship-connector::before {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 2px;
+  height: 100%;
+  background: #c9b77d;
+  content: "";
+}
+
+.relationship-chip {
+  position: relative;
+  z-index: 1;
+  align-self: center;
+  padding: 3px 8px;
+  color: #234b34;
+  background: #f3eddd;
+  border: 1px solid #c9b77d;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: bold;
+}
+
+.descendant-group.vertical {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.descendant-group.horizontal {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  gap: 12px;
+}
+
+.descendant-group.vertical > .branch-node::before,
+.descendant-group.horizontal > .branch-node::before {
+  display: none;
+}
+
+.descendant-group.vertical > .branch-node {
+  padding-left: 20px;
+}
+
+.descendant-group.vertical > .branch-node::after {
+  position: absolute;
+  top: 0;
+  bottom: -12px;
+  left: 6px;
+  width: 2px;
+  background: #c9b77d;
+  content: "";
+}
+
+.descendant-group.vertical > .branch-node:last-child::after {
+  bottom: 50%;
+}
+
+.descendant-group.vertical > .branch-node > .person-card::before {
+  position: absolute;
+  top: 50%;
+  left: -16px;
+  width: 16px;
+  height: 2px;
+  background: #c9b77d;
+  content: "";
+}
+
+@media (max-width: 900px) {
+  .hybrid-founder-branches {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .founder-child-grid,
+  .descendant-group.horizontal {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  .founder-child-grid,
+  .descendant-group.horizontal {
+    grid-template-columns: 1fr;
+  }
+}

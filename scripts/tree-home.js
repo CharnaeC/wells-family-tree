@@ -114,10 +114,15 @@ function getInitials(name) {
 function createPhoto(person, className) {
   const wrap = document.createElement("span");
   wrap.className = `${className} person-photo-wrap`;
+    const photoUrl =
+    getTreeProfilePhoto(
+      person,
+      publicProfileMap
+    );
 
-  if (person?.photo) {
+if (photoUrl) {
     const image = document.createElement("img");
-    image.src = person.photo;
+image.src = photoUrl;
     image.alt = `${person.displayName} profile`;
     image.loading = "lazy";
 

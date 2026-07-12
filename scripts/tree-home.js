@@ -1,23 +1,502 @@
 "use strict";
-const FOUNDERS=[{id:"I500071",label:"Nathaniel Wells",childIds:["I500124","I500296","I500320","I500321","I500093","I500125","I500010","I500073","I500123","I500311","I500177"]},{id:"I500194",label:"William Wells",childIds:["I500197","I500239","I500198","I500235","I500196"]}];
-const DEFAULT_PHOTO="data:image/svg+xml;charset=UTF-8,"+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180"><rect width="180" height="180" fill="#e9e1cf"/><circle cx="90" cy="67" r="34" fill="#b38b2d"/><path d="M32 164c8-42 32-63 58-63s50 21 58 63" fill="#234b34"/></svg>`);
-const founderContainer=document.getElementById("founderBranches"),searchInput=document.getElementById("familySearch"),searchButton=document.getElementById("searchButton"),clearSearchButton=document.getElementById("clearSearchButton"),searchMessage=document.getElementById("searchMessage"),profileModal=document.getElementById("profileModal"),closeProfileButton=document.getElementById("closeProfileButton"),profilePhoto=document.getElementById("profilePhoto"),profileStatus=document.getElementById("profileStatus"),profileName=document.getElementById("profileName"),profileBiography=document.getElementById("profileBiography"),profileConnections=document.getElementById("profileConnections");
-let familyData=null,peopleById=new Map();
-async function loadFamilyData(){try{const r=await fetch("data/family.json",{cache:"no-store"});if(!r.ok)throw new Error(`Could not load family.json (${r.status})`);familyData=await r.json();peopleById=new Map(familyData.people.map(p=>[p.id,p]));renderFounderBranches();searchMessage.textContent=`${familyData.people.length} relatives are available to search.`}catch(e){console.error(e);founderContainer.innerHTML=`<p class="tree-error">The family tree could not be loaded.</p>`}}
-function initials(n){return(n||"?").split(/\s+/).filter(Boolean).slice(0,2).map(x=>x[0].toUpperCase()).join("")}
-function photo(p,c){if(p?.photo){const i=document.createElement("img");i.className=c;i.src=p.photo;i.alt=`${p.displayName} profile`;i.addEventListener("error",()=>i.src=DEFAULT_PHOTO);return i}const s=document.createElement("span");s.className=`${c} person-initials`;s.textContent=initials(p?.displayName);return s}
-function renderFounderBranches(){founderContainer.innerHTML="";FOUNDERS.forEach(f=>{const founder=peopleById.get(f.id)||{id:f.id,displayName:f.label,photo:""};const sec=document.createElement("article");sec.className="nested-founder-section";const founderCard=createPersonCard(founder,{role:"founder",expandable:false});const stem=document.createElement("div");stem.className="founder-stem";const row=document.createElement("div");row.className="nested-child-row";f.childIds.forEach(id=>{const p=peopleById.get(id);if(p)row.appendChild(createBranchNode(p,new Set()))});sec.append(founderCard,stem,row);founderContainer.appendChild(sec)})}
-function createBranchNode(person,visited){const wrap=document.createElement("div");wrap.className="nested-branch-node";wrap.dataset.personId=person.id;const next=new Set(visited);next.add(person.id);const kids=(person.children||[]).map(id=>peopleById.get(id)).filter(Boolean).filter(c=>!next.has(c.id));const card=createPersonCard(person,{role:"branch",expandable:kids.length>0});wrap.appendChild(card);if(kids.length){const descendants=document.createElement("div");descendants.className="nested-descendants";descendants.hidden=true;const stem=document.createElement("div");stem.className="nested-descendant-stem";const row=document.createElement("div");row.className="nested-child-row nested-generation-row";kids.forEach(c=>row.appendChild(createBranchNode(c,next)));descendants.append(stem,row);wrap.appendChild(descendants);card.addEventListener("click",e=>{if(e.target.closest(".profile-button"))return;const open=card.getAttribute("aria-expanded")==="true";descendants.hidden=open;card.setAttribute("aria-expanded",String(!open));card.classList.toggle("expanded-person-card",!open);const l=card.querySelector(".branch-action-label");if(l)l.textContent=open?"Show children +":"Hide children −"})}return wrap}
-function createPersonCard(person,o){const card=document.createElement("button");card.type="button";card.className=o.role==="founder"?"nested-founder-card":"nested-person-card";card.dataset.personId=person.id;card.dataset.searchName=`${person.displayName} ${person.profileName||""}`.toLowerCase();if(o.expandable)card.setAttribute("aria-expanded","false");card.appendChild(photo(person,o.role==="founder"?"founder-photo":"branch-child-photo"));const txt=document.createElement("span");txt.className="nested-person-text";const n=document.createElement("strong");n.textContent=person.displayName;const a=document.createElement("span");a.className="branch-action-label";a.textContent=o.expandable?"Show children +":o.role==="founder"?"Founding generation":"End of this line";txt.append(n,a);card.appendChild(txt);const pb=document.createElement("span");pb.className="profile-button";pb.textContent="Profile";pb.addEventListener("click",e=>{e.stopPropagation();openProfile(person)});card.appendChild(pb);if(!o.expandable)card.addEventListener("click",()=>openProfile(person));return card}
-function findPath(cur,target,visited=new Set()){if(visited.has(cur))return null;visited.add(cur);if(cur===target)return[cur];const p=peopleById.get(cur);for(const id of p?.children||[]){const r=findPath(id,target,new Set(visited));if(r)return[cur,...r]}return null}
-function pathFromFounder(target){for(const f of FOUNDERS){if(f.id===target)return[f.id];for(const c of f.childIds){const p=findPath(c,target);if(p)return[f.id,...p]}}return null}
-function collapseAll(){document.querySelectorAll(".nested-descendants").forEach(x=>x.hidden=true);document.querySelectorAll(".nested-person-card[aria-expanded]").forEach(c=>{c.setAttribute("aria-expanded","false");c.classList.remove("expanded-person-card");const l=c.querySelector(".branch-action-label");if(l)l.textContent="Show children +"})}
-function expandPath(target){const path=pathFromFounder(target);if(!path)return;collapseAll();for(let i=1;i<path.length-1;i++){const id=path[i],card=document.querySelector(`.nested-person-card[data-person-id="${id}"]`),wrap=card?.closest(".nested-branch-node"),desc=wrap?.querySelector(":scope > .nested-descendants");if(desc){desc.hidden=false;card.setAttribute("aria-expanded","true");card.classList.add("expanded-person-card");const l=card.querySelector(".branch-action-label");if(l)l.textContent="Hide children −"}}}
-function clearHighlights(){document.querySelectorAll(".tree-search-match").forEach(e=>e.classList.remove("tree-search-match"))}
-function searchFamily(){const t=searchInput.value.trim().toLowerCase();clearHighlights();if(!t){searchMessage.textContent="Enter a name to search.";return}const m=familyData.people.filter(p=>`${p.displayName} ${p.profileName||""}`.toLowerCase().includes(t));if(!m.length){searchMessage.textContent=`No relative was found for “${searchInput.value.trim()}.”`;return}expandPath(m[0].id);requestAnimationFrame(()=>{const el=document.querySelector(`[data-person-id="${m[0].id}"]`);if(el){el.classList.add("tree-search-match");el.scrollIntoView({behavior:"smooth",block:"center"})}});searchMessage.textContent=`${m.length} relative${m.length===1?"":"s"} found.`}
-function clearSearch(){searchInput.value="";clearHighlights();searchMessage.textContent=`${familyData?.people?.length||0} relatives are available to search.`}
-function addConnection(label,ids){if(!ids?.length)return;const p=document.createElement("p"),s=document.createElement("strong");s.textContent=`${label}: `;p.append(s,document.createTextNode(ids.map(id=>peopleById.get(id)?.displayName||"Unknown relative").join(", ")));profileConnections.appendChild(p)}
-function addText(label,text){if(!text)return;const p=document.createElement("p"),s=document.createElement("strong");s.textContent=`${label}: `;p.append(s,document.createTextNode(text));profileConnections.appendChild(p)}
-function openProfile(p){profilePhoto.src=p.photo||DEFAULT_PHOTO;profilePhoto.alt=`${p.displayName} profile`;profileName.textContent=p.profileName||p.displayName;profileStatus.textContent=p.living?"Living family member":"Remembered family member";profileBiography.textContent=p.biography||"A biography has not been added yet.";profileConnections.innerHTML="";addConnection("Parents",p.parents);addConnection("Spouse",p.spouses);addConnection("Children",p.children);if(!p.living){addText("Born",[p.birth?.date,p.birth?.place].filter(Boolean).join(" — "));addText("Died",[p.death?.date,p.death?.place].filter(Boolean).join(" — "))}profileModal.hidden=false;document.body.classList.add("modal-open")}
-function closeProfile(){profileModal.hidden=true;document.body.classList.remove("modal-open")}
-searchButton.addEventListener("click",searchFamily);clearSearchButton.addEventListener("click",clearSearch);closeProfileButton.addEventListener("click",closeProfile);searchInput.addEventListener("keydown",e=>{if(e.key==="Enter")searchFamily()});profileModal.addEventListener("click",e=>{if(e.target===profileModal)closeProfile()});document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!profileModal.hidden)closeProfile()});loadFamilyData();
+
+const FOUNDERS = [
+  {
+    id: "I500071",
+    label: "Nathaniel Wells",
+    childIds: [
+      "I500124", "I500296", "I500320", "I500321", "I500093",
+      "I500125", "I500010", "I500073", "I500123", "I500311",
+      "I500177"
+    ]
+  },
+  {
+    id: "I500194",
+    label: "William Wells",
+    childIds: [
+      "I500197", "I500239", "I500198", "I500235", "I500196"
+    ]
+  }
+];
+
+const DEFAULT_PHOTO =
+  "data:image/svg+xml;charset=UTF-8," +
+  encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="180" height="180">
+      <rect width="180" height="180" fill="#e9e1cf"/>
+      <circle cx="90" cy="67" r="34" fill="#b38b2d"/>
+      <path d="M32 164c8-42 32-63 58-63s50 21 58 63" fill="#234b34"/>
+    </svg>
+  `);
+
+const founderContainer = document.getElementById("founderBranches");
+const searchInput = document.getElementById("familySearch");
+const searchButton = document.getElementById("searchButton");
+const clearSearchButton = document.getElementById("clearSearchButton");
+const searchMessage = document.getElementById("searchMessage");
+
+const profileModal = document.getElementById("profileModal");
+const closeProfileButton = document.getElementById("closeProfileButton");
+const profilePhoto = document.getElementById("profilePhoto");
+const profileStatus = document.getElementById("profileStatus");
+const profileName = document.getElementById("profileName");
+const profileBiography = document.getElementById("profileBiography");
+const profileConnections = document.getElementById("profileConnections");
+
+let familyData = null;
+let peopleById = new Map();
+
+async function loadFamilyData() {
+  try {
+    const response = await fetch("data/family.json", { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error(`Could not load family.json (${response.status})`);
+    }
+
+    familyData = await response.json();
+    if (!Array.isArray(familyData.people)) {
+      throw new Error("family.json does not contain a people list.");
+    }
+
+    peopleById = new Map(
+      familyData.people.map((person) => [person.id, person])
+    );
+
+    renderFounders();
+    searchMessage.textContent =
+      `${familyData.people.length} relatives are available to search.`;
+  } catch (error) {
+    console.error(error);
+    founderContainer.innerHTML = `
+      <p class="tree-error">
+        The family tree could not be loaded. Confirm that
+        <strong>data/family.json</strong> exists.
+      </p>
+    `;
+  }
+}
+
+function getInitials(name) {
+  return (name || "?")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+}
+
+function createPhoto(person, className) {
+  const wrap = document.createElement("span");
+  wrap.className = `${className} person-photo-wrap`;
+
+  if (person?.photo) {
+    const image = document.createElement("img");
+    image.src = person.photo;
+    image.alt = `${person.displayName} profile`;
+    image.loading = "lazy";
+
+    image.addEventListener("error", () => {
+      wrap.innerHTML = "";
+      const initials = document.createElement("span");
+      initials.className = "person-initials";
+      initials.textContent = getInitials(person.displayName);
+      wrap.appendChild(initials);
+    });
+
+    wrap.appendChild(image);
+  } else {
+    const initials = document.createElement("span");
+    initials.className = "person-initials";
+    initials.textContent = getInitials(person?.displayName);
+    wrap.appendChild(initials);
+  }
+
+  return wrap;
+}
+
+function renderFounders() {
+  founderContainer.innerHTML = "";
+
+  FOUNDERS.forEach((config) => {
+    const founder = peopleById.get(config.id) || {
+      id: config.id,
+      displayName: config.label,
+      photo: ""
+    };
+
+    const section = document.createElement("article");
+    section.className = "hybrid-founder-section";
+
+    const founderCard = createCard(founder, {
+      type: "founder",
+      relationship: "Founding generation",
+      expandable: false
+    });
+
+    const stem = document.createElement("div");
+    stem.className = "founder-stem";
+
+    const childGrid = document.createElement("div");
+    childGrid.className = "founder-child-grid";
+
+    config.childIds.forEach((childId) => {
+      const child = peopleById.get(childId);
+      if (!child) return;
+
+      childGrid.appendChild(
+        createBranchNode(child, {
+          parent: founder,
+          founder,
+          depth: 1,
+          orientation: "vertical",
+          visited: new Set()
+        })
+      );
+    });
+
+    section.append(founderCard, stem, childGrid);
+    founderContainer.appendChild(section);
+  });
+}
+
+function createBranchNode(person, context) {
+  const wrapper = document.createElement("div");
+  wrapper.className = `branch-node depth-${context.depth}`;
+  wrapper.dataset.personId = person.id;
+
+  const visited = new Set(context.visited);
+  visited.add(person.id);
+
+  const children = (person.children || [])
+    .map((id) => peopleById.get(id))
+    .filter(Boolean)
+    .filter((child) => !visited.has(child.id));
+
+  const relationship = relationshipLabel(context.depth, context.parent, context.founder);
+
+  const card = createCard(person, {
+    type: "person",
+    relationship,
+    expandable: children.length > 0
+  });
+
+  wrapper.appendChild(card);
+
+  if (children.length > 0) {
+    const descendants = document.createElement("div");
+    descendants.className = `descendant-panel ${context.orientation}`;
+    descendants.hidden = true;
+
+    const connector = document.createElement("div");
+    connector.className = "relationship-connector";
+
+    const connectorLabel = document.createElement("span");
+    connectorLabel.className = "relationship-chip";
+    connectorLabel.textContent =
+      children.length === 1 ? "1 child" : `${children.length} children`;
+    connector.appendChild(connectorLabel);
+
+    const nextOrientation = chooseOrientation(children.length, context.depth + 1);
+    const childContainer = document.createElement("div");
+    childContainer.className = `descendant-group ${nextOrientation}`;
+
+    children.forEach((child) => {
+      childContainer.appendChild(
+        createBranchNode(child, {
+          parent: person,
+          founder: context.founder,
+          depth: context.depth + 1,
+          orientation: nextOrientation,
+          visited
+        })
+      );
+    });
+
+    descendants.append(connector, childContainer);
+    wrapper.appendChild(descendants);
+
+    card.addEventListener("click", (event) => {
+      if (event.target.closest(".profile-link")) return;
+
+      const expanded = card.getAttribute("aria-expanded") === "true";
+      descendants.hidden = expanded;
+      card.setAttribute("aria-expanded", String(!expanded));
+      card.classList.toggle("expanded-card", !expanded);
+
+      const action = card.querySelector(".expand-label");
+      if (action) {
+        action.textContent = expanded ? "Show children +" : "Hide children −";
+      }
+    });
+  }
+
+  return wrapper;
+}
+
+function chooseOrientation(childCount, depth) {
+  if (childCount >= 4) return "vertical";
+  if (childCount <= 3 && depth % 2 === 0) return "horizontal";
+  return "vertical";
+}
+
+function relationshipLabel(depth, parent, founder) {
+  if (depth === 1) return `Child of ${founder.displayName}`;
+  if (depth === 2) return `Grandchild of ${founder.displayName}`;
+  if (depth === 3) return `Great-grandchild of ${founder.displayName}`;
+  return `Generation ${depth + 1} descendant`;
+}
+
+function createCard(person, options) {
+  const card = document.createElement("button");
+  card.type = "button";
+  card.className =
+    options.type === "founder" ? "founder-card" : "person-card";
+  card.dataset.personId = person.id;
+  card.dataset.searchName =
+    `${person.displayName} ${person.profileName || ""}`.toLowerCase();
+
+  if (options.expandable) {
+    card.setAttribute("aria-expanded", "false");
+  }
+
+  card.appendChild(
+    createPhoto(
+      person,
+      options.type === "founder" ? "founder-photo" : "person-photo"
+    )
+  );
+
+  const body = document.createElement("span");
+  body.className = "card-body";
+
+  const name = document.createElement("strong");
+  name.textContent = person.displayName;
+
+  const relation = document.createElement("span");
+  relation.className = "relationship-label";
+  relation.textContent = options.relationship;
+
+  body.append(name, relation);
+
+  if (options.expandable) {
+    const expand = document.createElement("span");
+    expand.className = "expand-label";
+    expand.textContent = "Show children +";
+    body.appendChild(expand);
+  } else if (options.type !== "founder") {
+    const end = document.createElement("span");
+    end.className = "expand-label";
+    end.textContent = "End of this line";
+    body.appendChild(end);
+  }
+
+  card.appendChild(body);
+
+  const profile = document.createElement("span");
+  profile.className = "profile-link";
+  profile.textContent = "View profile";
+  profile.setAttribute("role", "button");
+  profile.setAttribute("aria-label", `View ${person.displayName} profile`);
+  profile.addEventListener("click", (event) => {
+    event.stopPropagation();
+    openProfile(person);
+  });
+
+  card.appendChild(profile);
+
+  if (!options.expandable) {
+    card.addEventListener("click", () => openProfile(person));
+  }
+
+  return card;
+}
+
+function findPath(currentId, targetId, visited = new Set()) {
+  if (visited.has(currentId)) return null;
+  visited.add(currentId);
+
+  if (currentId === targetId) return [currentId];
+
+  const person = peopleById.get(currentId);
+  for (const childId of person?.children || []) {
+    const path = findPath(childId, targetId, new Set(visited));
+    if (path) return [currentId, ...path];
+  }
+
+  return null;
+}
+
+function findFounderPath(targetId) {
+  for (const founder of FOUNDERS) {
+    if (founder.id === targetId) return [founder.id];
+
+    for (const childId of founder.childIds) {
+      const path = findPath(childId, targetId);
+      if (path) return [founder.id, ...path];
+    }
+  }
+
+  return null;
+}
+
+function collapseAll() {
+  document.querySelectorAll(".descendant-panel").forEach((panel) => {
+    panel.hidden = true;
+  });
+
+  document.querySelectorAll(".person-card[aria-expanded]").forEach((card) => {
+    card.setAttribute("aria-expanded", "false");
+    card.classList.remove("expanded-card");
+    const label = card.querySelector(".expand-label");
+    if (label) label.textContent = "Show children +";
+  });
+}
+
+function expandPath(targetId) {
+  const path = findFounderPath(targetId);
+  if (!path) return;
+
+  collapseAll();
+
+  path.slice(1, -1).forEach((id) => {
+    const card = document.querySelector(`.person-card[data-person-id="${id}"]`);
+    if (!card) return;
+
+    const panel = card.closest(".branch-node")
+      ?.querySelector(":scope > .descendant-panel");
+
+    if (panel) {
+      panel.hidden = false;
+      card.setAttribute("aria-expanded", "true");
+      card.classList.add("expanded-card");
+      const label = card.querySelector(".expand-label");
+      if (label) label.textContent = "Hide children −";
+    }
+  });
+}
+
+function clearHighlights() {
+  document.querySelectorAll(".search-match").forEach((element) => {
+    element.classList.remove("search-match");
+  });
+}
+
+function searchFamily() {
+  const term = searchInput.value.trim().toLowerCase();
+  clearHighlights();
+
+  if (!term) {
+    searchMessage.textContent = "Enter a name to search.";
+    return;
+  }
+
+  const matches = familyData.people.filter((person) =>
+    `${person.displayName} ${person.profileName || ""}`
+      .toLowerCase()
+      .includes(term)
+  );
+
+  if (!matches.length) {
+    searchMessage.textContent =
+      `No relative was found for “${searchInput.value.trim()}.”`;
+    return;
+  }
+
+  const first = matches[0];
+  expandPath(first.id);
+
+  requestAnimationFrame(() => {
+    const element = document.querySelector(`[data-person-id="${first.id}"]`);
+    if (element) {
+      element.classList.add("search-match");
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  });
+
+  searchMessage.textContent =
+    `${matches.length} relative${matches.length === 1 ? "" : "s"} found.`;
+}
+
+function clearSearch() {
+  searchInput.value = "";
+  clearHighlights();
+  searchMessage.textContent =
+    `${familyData?.people?.length || 0} relatives are available to search.`;
+}
+
+function addConnection(label, ids) {
+  if (!Array.isArray(ids) || !ids.length) return;
+
+  const row = document.createElement("p");
+  const strong = document.createElement("strong");
+  strong.textContent = `${label}: `;
+
+  const names = ids.map(
+    (id) => peopleById.get(id)?.displayName || "Unknown relative"
+  );
+
+  row.append(strong, document.createTextNode(names.join(", ")));
+  profileConnections.appendChild(row);
+}
+
+function addTextDetail(label, text) {
+  if (!text) return;
+  const row = document.createElement("p");
+  const strong = document.createElement("strong");
+  strong.textContent = `${label}: `;
+  row.append(strong, document.createTextNode(text));
+  profileConnections.appendChild(row);
+}
+
+function openProfile(person) {
+  profilePhoto.src = person.photo || DEFAULT_PHOTO;
+  profilePhoto.alt = `${person.displayName} profile`;
+  profileName.textContent = person.profileName || person.displayName;
+  profileStatus.textContent = person.living
+    ? "Living family member"
+    : "Remembered family member";
+  profileBiography.textContent =
+    person.biography || "A biography has not been added yet.";
+
+  profileConnections.innerHTML = "";
+  addConnection("Parents", person.parents);
+  addConnection("Spouse", person.spouses);
+  addConnection("Children", person.children);
+
+  if (!person.living) {
+    addTextDetail(
+      "Born",
+      [person.birth?.date, person.birth?.place].filter(Boolean).join(" — ")
+    );
+    addTextDetail(
+      "Died",
+      [person.death?.date, person.death?.place].filter(Boolean).join(" — ")
+    );
+  }
+
+  profileModal.hidden = false;
+  document.body.classList.add("modal-open");
+}
+
+function closeProfile() {
+  profileModal.hidden = true;
+  document.body.classList.remove("modal-open");
+}
+
+searchButton.addEventListener("click", searchFamily);
+clearSearchButton.addEventListener("click", clearSearch);
+closeProfileButton.addEventListener("click", closeProfile);
+
+searchInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") searchFamily();
+});
+
+profileModal.addEventListener("click", (event) => {
+  if (event.target === profileModal) closeProfile();
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !profileModal.hidden) closeProfile();
+});
+
+loadFamilyData();

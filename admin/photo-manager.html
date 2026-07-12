@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta name="robots" content="noindex,nofollow">
+
+  <title>Photo Manager | Wells Family Archive</title>
+
+  <link rel="stylesheet" href="../style.css">
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #f7f5ef;
+      color: #333;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    header {
+      padding: 28px 24px;
+      text-align: center;
+      color: white;
+      background: #234b34;
+    }
+
+    main {
+      width: min(1000px, 94%);
+      margin: 35px auto;
+    }
+
+    .panel {
+      padding: 26px;
+      background: white;
+      border: 1px solid #e2ddcf;
+      border-radius: 16px;
+    }
+
+    h2,
+    h3 {
+      color: #234b34;
+    }
+
+    label {
+      display: block;
+      margin: 16px 0 7px;
+      color: #234b34;
+      font-weight: bold;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #aaa;
+      border-radius: 8px;
+      font: inherit;
+    }
+
+    textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    button,
+    .back-link {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 12px 18px;
+      text-decoration: none;
+      color: white;
+      background: #234b34;
+      border: 0;
+      border-radius: 8px;
+      cursor: pointer;
+      font: inherit;
+      font-weight: bold;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .search-results {
+      display: grid;
+      grid-template-columns: repeat(
+        auto-fit,
+        minmax(210px, 1fr)
+      );
+      gap: 10px;
+      max-height: 340px;
+      overflow-y: auto;
+      margin-top: 12px;
+      padding: 12px;
+      background: #faf8f2;
+      border-radius: 10px;
+    }
+
+    .person-option {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      padding: 10px;
+      background: white;
+      border: 1px solid #ddd3b7;
+      border-radius: 9px;
+    }
+
+    .person-option input {
+      width: auto;
+      margin-top: 4px;
+    }
+
+    .person-option strong {
+      display: block;
+      color: #234b34;
+    }
+
+    .person-option small {
+      color: #666;
+    }
+
+    .selected-summary {
+      margin-top: 14px;
+      padding: 12px;
+      background: #f3eddd;
+      border-radius: 9px;
+    }
+
+    .profile-select {
+      margin-top: 14px;
+    }
+
+    .profile-select select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #aaa;
+      border-radius: 8px;
+      font: inherit;
+    }
+
+    .preview-grid {
+      display: grid;
+      grid-template-columns: repeat(
+        auto-fit,
+        minmax(130px, 1fr)
+      );
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .preview-card {
+      padding: 9px;
+      text-align: center;
+      background: #faf8f2;
+      border-radius: 10px;
+    }
+
+    .preview-card img {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+
+    .preview-card small {
+      display: block;
+      margin-top: 6px;
+      overflow-wrap: anywhere;
+    }
+
+    .message {
+      min-height: 24px;
+      margin-top: 16px;
+    }
+
+    .error {
+      color: #a12828;
+    }
+
+    .success {
+      color: #1d6b3a;
+      font-weight: bold;
+    }
+
+    progress {
+      width: 100%;
+      height: 18px;
+      margin-top: 16px;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Wells Family Photo Manager</h1>
+
+    <p>
+      Upload photographs and tag the relatives who appear in them.
+    </p>
+  </header>
+
+  <main>
+    <section class="panel">
+      <a class="back-link" href="./dashboard.html">
+        ← Back to dashboard
+      </a>
+
+      <h2>1. Choose photographs</h2>
+
+      <label for="photoFiles">
+        Select one or more photos
+      </label>
+
+      <input
+        id="photoFiles"
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        multiple
+      >
+
+      <div id="previewGrid" class="preview-grid"></div>
+
+      <h2>2. Add photo details</h2>
+
+      <label for="photoTitle">
+        Title or collection name
+      </label>
+
+      <input
+        id="photoTitle"
+        type="text"
+        placeholder="Example: Wells Family Reunion"
+      >
+
+      <label for="photoCaption">
+        Caption
+      </label>
+
+      <textarea
+        id="photoCaption"
+        placeholder="Add a date, location or short description"
+      ></textarea>
+
+      <h2>3. Tag relatives</h2>
+
+      <label for="personSearch">
+        Search relatives by name
+      </label>
+
+      <input
+        id="personSearch"
+        type="search"
+        placeholder="Example: Helena Wells"
+      >
+
+      <button id="searchButton" type="button">
+        Search people
+      </button>
+
+      <div
+        id="searchResults"
+        class="search-results"
+        aria-live="polite"
+      ></div>
+
+      <div
+        id="selectedSummary"
+        class="selected-summary"
+      >
+        No relatives selected.
+      </div>
+
+      <div class="profile-select">
+        <label for="profilePerson">
+          Optional: use these photos as a profile picture for
+        </label>
+
+        <select id="profilePerson">
+          <option value="">
+            Do not change a profile picture
+          </option>
+        </select>
+      </div>
+
+      <button
+        id="uploadButton"
+        type="button"
+        disabled
+      >
+        Upload and tag photos
+      </button>
+
+      <progress
+        id="uploadProgress"
+        max="100"
+        value="0"
+      ></progress>
+
+      <p
+        id="message"
+        class="message"
+        aria-live="polite"
+      ></p>
+    </section>
+  </main>
+
+  <script type="module">
+    import {
+      requireArchiveAdmin,
+      searchPeople,
+      uploadPhoto
+    } from "../scripts/photo-manager.js";
+
+    const photoFiles =
+      document.getElementById("photoFiles");
+
+    const previewGrid =
+      document.getElementById("previewGrid");
+
+    const photoTitle =
+      document.getElementById("photoTitle");
+
+    const photoCaption =
+      document.getElementById("photoCaption");
+
+    const personSearch =
+      document.getElementById("personSearch");
+
+    const searchButton =
+      document.getElementById("searchButton");
+
+    const searchResults =
+      document.getElementById("searchResults");
+
+    const selectedSummary =
+      document.getElementById("selectedSummary");
+
+    const profilePerson =
+      document.getElementById("profilePerson");
+
+    const uploadButton =
+      document.getElementById("uploadButton");
+
+    const uploadProgress =
+      document.getElementById("uploadProgress");
+
+    const message =
+      document.getElementById("message");
+
+    const selectedPeople = new Map();
+
+    function updateUploadButton() {
+      uploadButton.disabled =
+        !photoFiles.files?.length ||
+        selectedPeople.size === 0;
+    }
+
+    function updateSelectedPeople() {
+      const people =
+        Array.from(selectedPeople.values());
+
+      if (!people.length) {
+        selectedSummary.textContent =
+          "No relatives selected.";
+      } else {
+        selectedSummary.textContent =
+          `Selected: ${people
+            .map(person => person.display_name)
+            .join(", ")}`;
+      }
+
+      const currentProfileValue =
+        profilePerson.value;
+
+      profilePerson.innerHTML = `
+        <option value="">
+          Do not change a profile picture
+        </option>
+      `;
+
+      people.forEach(person => {
+        const option =
+          document.createElement("option");
+
+        option.value = person.id;
+        option.textContent =
+          person.display_name;
+
+        profilePerson.appendChild(option);
+      });
+
+      if (
+        people.some(
+          person => person.id === currentProfileValue
+        )
+      ) {
+        profilePerson.value =
+          currentProfileValue;
+      }
+
+      updateUploadButton();
+    }
+
+    function showPreviews() {
+      previewGrid.innerHTML = "";
+
+      const files =
+        Array.from(photoFiles.files || []);
+
+      files.forEach(file => {
+        const card =
+          document.createElement("article");
+
+        card.className = "preview-card";
+
+        const image =
+          document.createElement("img");
+
+        image.src =
+          URL.createObjectURL(file);
+
+        image.alt = file.name;
+
+        const label =
+          document.createElement("small");
+
+        label.textContent = file.name;
+
+        card.append(image, label);
+        previewGrid.appendChild(card);
+      });
+
+      updateUploadButton();
+    }
+
+    async function performSearch() {
+      message.textContent =
+        "Searching relatives…";
+
+      message.classList.remove(
+        "error",
+        "success"
+      );
+
+      try {
+        const people =
+          await searchPeople(
+            personSearch.value
+          );
+
+        searchResults.innerHTML = "";
+
+        if (!people.length) {
+          searchResults.textContent =
+            "No relatives found.";
+
+          message.textContent = "";
+          return;
+        }
+
+        people.forEach(person => {
+          const label =
+            document.createElement("label");
+
+          label.className =
+            "person-option";
+
+          const checkbox =
+            document.createElement("input");
+
+          checkbox.type = "checkbox";
+          checkbox.checked =
+            selectedPeople.has(person.id);
+
+          const text =
+            document.createElement("span");
+
+          const name =
+            document.createElement("strong");
+
+          name.textContent =
+            person.display_name;
+
+          const detail =
+            document.createElement("small");
+
+          detail.textContent =
+            person.is_living
+              ? "Living relative"
+              : person.gedcom_id || "";
+
+          text.append(name, detail);
+
+          checkbox.addEventListener(
+            "change",
+            () => {
+              if (checkbox.checked) {
+                selectedPeople.set(
+                  person.id,
+                  person
+                );
+              } else {
+                selectedPeople.delete(
+                  person.id
+                );
+              }
+
+              updateSelectedPeople();
+            }
+          );
+
+          label.append(checkbox, text);
+          searchResults.appendChild(label);
+        });
+
+        message.textContent =
+          `${people.length} relative${
+            people.length === 1 ? "" : "s"
+          } found.`;
+      } catch (error) {
+        console.error(error);
+
+        message.textContent =
+          error.message ||
+          "The relatives could not be loaded.";
+
+        message.classList.add("error");
+      }
+    }
+
+    photoFiles.addEventListener(
+      "change",
+      showPreviews
+    );
+
+    searchButton.addEventListener(
+      "click",
+      performSearch
+    );
+
+    personSearch.addEventListener(
+      "keydown",
+      event => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          performSearch();
+        }
+      }
+    );
+
+    uploadButton.addEventListener(
+      "click",
+      async () => {
+        const files =
+          Array.from(
+            photoFiles.files || []
+          );
+
+        const personIds =
+          Array.from(
+            selectedPeople.keys()
+          );
+
+        const profilePersonId =
+          profilePerson.value || null;
+
+        uploadButton.disabled = true;
+        uploadProgress.value = 0;
+
+        message.textContent =
+          "Uploading photographs…";
+
+        message.classList.remove(
+          "error",
+          "success"
+        );
+
+        let uploaded = 0;
+        const failures = [];
+
+        for (
+          let index = 0;
+          index < files.length;
+          index += 1
+        ) {
+          const file = files[index];
+
+          message.textContent =
+            `Uploading ${index + 1} of ` +
+            `${files.length}: ${file.name}`;
+
+          try {
+            await uploadPhoto({
+              file,
+              title: photoTitle.value,
+              caption: photoCaption.value,
+              personIds,
+              profilePersonId:
+                index === 0
+                  ? profilePersonId
+                  : null
+            });
+
+            uploaded += 1;
+          } catch (error) {
+            console.error(error);
+
+            failures.push(
+              `${file.name}: ${error.message}`
+            );
+          }
+
+          uploadProgress.value =
+            Math.round(
+              ((index + 1) / files.length) *
+              100
+            );
+        }
+
+        if (failures.length) {
+          message.textContent =
+            `${uploaded} uploaded. ` +
+            `${failures.length} failed: ` +
+            failures.join(" | ");
+
+          message.classList.add("error");
+        } else {
+          message.textContent =
+            `${uploaded} photograph${
+              uploaded === 1 ? "" : "s"
+            } uploaded and tagged successfully.`;
+
+          message.classList.add("success");
+        }
+
+        uploadButton.disabled = false;
+      }
+    );
+
+    try {
+      await requireArchiveAdmin();
+      await performSearch();
+    } catch (error) {
+      console.error(error);
+
+      message.textContent =
+        error.message ||
+        "Administrator access could not be verified.";
+
+      message.classList.add("error");
+    }
+  </script>
+</body>
+</html>

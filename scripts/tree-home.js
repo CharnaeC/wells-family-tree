@@ -1,3 +1,15 @@
+import {
+  loadPublicProfileMap
+} from "./public-family-data.js";
+
+import {
+  restoreExpandedTreeState
+} from "./tree-state.js";
+
+import {
+  openTreeProfile,
+  getTreeProfilePhoto
+} from "./tree-profiles.js";
 "use strict";
 
 const FOUNDERS = [
@@ -45,6 +57,7 @@ const profileConnections = document.getElementById("profileConnections");
 
 let familyData = null;
 let peopleById = new Map();
+let publicProfileMap = new Map();
 
 async function loadFamilyData() {
   try {
@@ -59,10 +72,23 @@ async function loadFamilyData() {
     }
 
     peopleById = new Map(
-      familyData.people.map((person) => [person.id, person])
-    );
+  familyData.people.map((person) => [person.id, person])
+);
 
-    renderFounders();
+try {
+  publicProfileMap =
+    await loadPublicProfileMap();
+} catch (profileError) {
+  console.warn(
+    "Supabase profile data could not be loaded.",
+    profileError
+  );
+
+  publicProfileMap = new Map();
+}
+
+renderFounders();
+restoreExpandedTreeState();
     searchMessage.textContent =
       `${familyData.people.length} relatives are available to search.`;
   } catch (error) {
@@ -88,10 +114,15 @@ function getInitials(name) {
 function createPhoto(person, className) {
   const wrap = document.createElement("span");
   wrap.className = `${className} person-photo-wrap`;
+    const photoUrl =
+    getTreeProfilePhoto(
+      person,
+      publicProfileMap
+    );
 
-  if (person?.photo) {
+if (photoUrl) {
     const image = document.createElement("img");
-    image.src = person.photo;
+image.src = photoUrl;
     image.alt = `${person.displayName} profile`;
     image.loading = "lazy";
 
@@ -298,16 +329,16 @@ function createCard(person, options) {
   profile.setAttribute("role", "button");
   profile.setAttribute("aria-label", `View ${person.displayName} profile`);
   profile.addEventListener("click", (event) => {
-    event.stopPropagation();
-    openProfile(person);
+  event.stopPropagation();
+
+  openTreeProfile({
+    person,
+    publicProfileMap,
+    fallback: openProfile
   });
+});
 
   card.appendChild(profile);
-
-  if (!options.expandable) {
-    card.addEventListener("click", () => openProfile(person));
-  }
-
   return card;
 }
 

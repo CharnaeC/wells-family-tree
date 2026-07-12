@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+
+  <title>GEDCOM Import | Wells Family Archive</title>
+
+  <link rel="stylesheet" href="../style.css">
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #f7f5ef;
+      color: #333;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    header {
+      padding: 28px 24px;
+      text-align: center;
+      color: white;
+      background: #234b34;
+    }
+
+    main {
+      width: min(900px, 92%);
+      margin: 35px auto;
+    }
+
+    .panel {
+      padding: 26px;
+      background: white;
+      border: 1px solid #e2ddcf;
+      border-radius: 16px;
+    }
+
+    h2,
+    h3 {
+      color: #234b34;
+    }
+
+    label {
+      display: block;
+      margin: 18px 0 8px;
+      color: #234b34;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #aaa;
+      border-radius: 8px;
+    }
+
+    button,
+    .back-link {
+      display: inline-block;
+      margin-top: 18px;
+      padding: 12px 18px;
+      text-decoration: none;
+      color: white;
+      background: #234b34;
+      border: 0;
+      border-radius: 8px;
+      cursor: pointer;
+      font: inherit;
+      font-weight: bold;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 22px;
+    }
+
+    .summary-card {
+      padding: 18px;
+      background: #f3eddd;
+      border-radius: 12px;
+    }
+
+    .summary-card span {
+      display: block;
+      color: #666;
+      font-size: 0.85rem;
+    }
+
+    .summary-card strong {
+      display: block;
+      margin-top: 6px;
+      color: #234b34;
+      font-size: 1.7rem;
+    }
+
+    .results {
+      margin-top: 28px;
+    }
+
+    .name-list {
+      max-height: 350px;
+      overflow-y: auto;
+      padding: 14px 18px;
+      background: #faf8f2;
+      border-radius: 10px;
+    }
+
+    .message {
+      min-height: 24px;
+      margin-top: 16px;
+    }
+
+    .error {
+      color: #a12828;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    @media (max-width: 700px) {
+      .summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>GEDCOM Import Preview</h1>
+    <p>Review the latest MyHeritage export before updating the archive.</p>
+  </header>
+
+  <main>
+    <section class="panel">
+      <a class="back-link" href="./dashboard.html">
+        ← Back to dashboard
+      </a>
+
+      <label for="gedcomFile">Choose the newest GEDCOM file</label>
+
+      <input
+        id="gedcomFile"
+        type="file"
+        accept=".ged,.gedcom,text/plain"
+      >
+
+      <button id="previewButton" type="button" disabled>
+        Preview GEDCOM
+      </button>
+
+      <p id="message" class="message" aria-live="polite"></p>
+
+      <section id="results" class="results" hidden>
+        <h2>Import preview</h2>
+
+        <div class="summary-grid">
+          <article class="summary-card">
+            <span>People</span>
+            <strong id="peopleCount">0</strong>
+          </article>
+
+          <article class="summary-card">
+            <span>Families</span>
+            <strong id="familyCount">0</strong>
+          </article>
+
+          <article class="summary-card">
+            <span>Living estimate</span>
+            <strong id="livingCount">0</strong>
+          </article>
+
+          <article class="summary-card">
+            <span>Deceased</span>
+            <strong id="deceasedCount">0</strong>
+          </article>
+        </div>
+
+        <h3>Names found</h3>
+        <ol id="nameList" class="name-list"></ol>
+
+        <p>
+          This is only a preview. No Supabase records have been changed.
+        </p>
+      </section>
+    </section>
+  </main>
+
+  <script type="module">
+    import { createClient } from
+      "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+    import {
+      SUPABASE_URL,
+      SUPABASE_PUBLISHABLE_KEY
+    } from "../scripts/supabase-config.js";
+
+    const supabase = createClient(
+      SUPABASE_URL,
+      SUPABASE_PUBLISHABLE_KEY
+    );
+
+    const fileInput = document.getElementById("gedcomFile");
+    const previewButton = document.getElementById("previewButton");
+    const message = document.getElementById("message");
+    const results = document.getElementById("results");
+
+    fileInput.addEventListener("change", () => {
+      previewButton.disabled = !fileInput.files?.length;
+      results.hidden = true;
+      message.textContent = "";
+    });
+
+    function parseGedcom(text) {
+      const lines = text
+        .replace(/\r\n/g, "\n")
+        .replace(/\r/g, "\n")
+        .split("\n");
+
+      const people = [];
+      let familyCount = 0;
+      let currentPerson = null;
+
+      for (const rawLine of lines) {
+        const line = rawLine.trimEnd();
+        const recordMatch = line.match(/^0\s+(@[^@]+@)\s+(INDI|FAM)$/);
+
+        if (recordMatch) {
+          const recordType = recordMatch[2];
+
+          if (recordType === "INDI") {
+            currentPerson = {
+              id: recordMatch[1].replaceAll("@", ""),
+              name: "Unknown",
+              deceased: false
+            };
+            people.push(currentPerson);
+          } else {
+            familyCount += 1;
+            currentPerson = null;
+          }
+          continue;
+        }
+
+        if (!currentPerson) continue;
+
+        const nameMatch = line.match(/^1\s+NAME\s+(.+)$/);
+        if (nameMatch) {
+          currentPerson.name = nameMatch[1]
+            .replaceAll("/", "")
+            .replace(/\s+/g, " ")
+            .trim();
+          continue;
+        }
+
+        if (/^1\s+DEAT(?:\s+Y)?$/.test(line)) {
+          currentPerson.deceased = true;
+        }
+      }
+
+      return { people, familyCount };
+    }
+
+    async function createPreviewRecord(file, parsed, living, deceased) {
+      const { data: sessionData, error: sessionError } =
+        await supabase.auth.getSession();
+
+      if (sessionError) throw sessionError;
+
+      const user = sessionData.session?.user;
+
+      if (!user) {
+        window.location.replace("./login.html");
+        throw new Error("Your administrator session has expired.");
+      }
+
+      const { error } = await supabase
+        .from("import_jobs")
+        .insert({
+          source_name: "MyHeritage",
+          original_filename: file.name,
+          status: "preview",
+          total_people: parsed.people.length,
+          total_families: parsed.familyCount,
+          living_people: living,
+          deceased_people: deceased,
+          created_by: user.id,
+          import_summary: { preview_only: true }
+        });
+
+      if (error) throw error;
+    }
+
+    previewButton.addEventListener("click", async () => {
+      const file = fileInput.files?.[0];
+      if (!file) return;
+
+      previewButton.disabled = true;
+      message.classList.remove("error");
+      message.textContent = "Reading GEDCOM…";
+      results.hidden = true;
+
+      try {
+        const text = await file.text();
+        const parsed = parseGedcom(text);
+
+        if (parsed.people.length === 0) {
+          throw new Error("No individual records were found in this GEDCOM.");
+        }
+
+        const deceased = parsed.people.filter(person => person.deceased).length;
+        const living = parsed.people.length - deceased;
+
+        document.getElementById("peopleCount").textContent = parsed.people.length;
+        document.getElementById("familyCount").textContent = parsed.familyCount;
+        document.getElementById("livingCount").textContent = living;
+        document.getElementById("deceasedCount").textContent = deceased;
+
+        const nameList = document.getElementById("nameList");
+        nameList.innerHTML = "";
+
+        parsed.people.forEach(person => {
+          const item = document.createElement("li");
+          item.textContent = `${person.name} — ${person.id}`;
+          nameList.appendChild(item);
+        });
+
+        await createPreviewRecord(file, parsed, living, deceased);
+
+        results.hidden = false;
+        message.textContent =
+          "Preview complete and recorded. No people or relationships were changed.";
+      } catch (error) {
+        console.error(error);
+        message.textContent = error.message || "The GEDCOM could not be read.";
+        message.classList.add("error");
+      } finally {
+        previewButton.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

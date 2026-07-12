@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Family Profile | Wells Family Archive</title>
+
+  <link rel="stylesheet" href="../style.css">
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #f7f5ef;
+      color: #333;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    header {
+      padding: 28px 24px;
+      text-align: center;
+      color: white;
+      background: #234b34;
+    }
+
+    main {
+      width: min(1000px, 94%);
+      margin: 35px auto;
+    }
+
+    .profile-shell {
+      padding: 26px;
+      background: white;
+      border: 1px solid #e2ddcf;
+      border-radius: 16px;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-bottom: 24px;
+      color: #234b34;
+      font-weight: bold;
+    }
+
+    .profile-header {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+
+    .profile-photo,
+    .initials-photo {
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 5px solid white;
+      box-shadow: 0 0 0 3px #b38b2d;
+      background: #234b34;
+    }
+
+    .initials-photo {
+      display: grid;
+      place-items: center;
+      color: white;
+      font-size: 2.2rem;
+      font-weight: bold;
+    }
+
+    h1,
+    h2 {
+      color: #234b34;
+    }
+
+    .profile-status {
+      margin: 0 0 8px;
+      color: #8a691d;
+      font-weight: bold;
+    }
+
+    .biography {
+      margin-top: 18px;
+      line-height: 1.7;
+    }
+
+    .connections,
+    .gallery-section {
+      margin-top: 34px;
+    }
+
+    .connection-list {
+      display: grid;
+      gap: 10px;
+      padding: 16px;
+      background: #faf8f2;
+      border-radius: 12px;
+    }
+
+    .connection-list p {
+      margin: 0;
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(
+        auto-fit,
+        minmax(180px, 1fr)
+      );
+      gap: 16px;
+    }
+
+    .gallery-card {
+      overflow: hidden;
+      background: #faf8f2;
+      border-radius: 12px;
+    }
+
+    .gallery-card img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+    }
+
+    .gallery-card div {
+      padding: 12px;
+    }
+
+    .gallery-card strong {
+      color: #234b34;
+    }
+
+    .message {
+      min-height: 24px;
+      margin-top: 16px;
+    }
+
+    .error {
+      color: #a12828;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    @media (max-width: 650px) {
+      .profile-header {
+        grid-template-columns: 1fr;
+        text-align: center;
+      }
+
+      .profile-photo,
+      .initials-photo {
+        margin: 0 auto;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Wells Family Archive</h1>
+    <p>Family profile</p>
+  </header>
+
+  <main>
+    <section class="profile-shell">
+      <a class="back-link" href="../tree.html">
+        ← Back to family tree
+      </a>
+
+      <p id="message" class="message" aria-live="polite">
+        Loading profile…
+      </p>
+
+      <section id="profileContent" hidden>
+        <div class="profile-header">
+          <div id="photoContainer"></div>
+
+          <div>
+            <p id="profileStatus" class="profile-status"></p>
+            <h1 id="profileName"></h1>
+
+            <div id="biography" class="biography"></div>
+          </div>
+        </div>
+
+        <section class="connections">
+          <h2>Family Connections</h2>
+          <div id="connectionList" class="connection-list"></div>
+        </section>
+
+        <section class="gallery-section">
+          <h2>Photo Gallery</h2>
+          <div id="galleryGrid" class="gallery-grid"></div>
+        </section>
+      </section>
+    </section>
+  </main>
+
+  <script type="module">
+    import { createClient } from
+      "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+    import {
+      SUPABASE_URL,
+      SUPABASE_PUBLISHABLE_KEY
+    } from "../scripts/supabase-config.js";
+
+    const supabase = createClient(
+      SUPABASE_URL,
+      SUPABASE_PUBLISHABLE_KEY
+    );
+
+    const message =
+      document.getElementById("message");
+
+    const profileContent =
+      document.getElementById("profileContent");
+
+    const photoContainer =
+      document.getElementById("photoContainer");
+
+    const profileStatus =
+      document.getElementById("profileStatus");
+
+    const profileName =
+      document.getElementById("profileName");
+
+    const biography =
+      document.getElementById("biography");
+
+    const connectionList =
+      document.getElementById("connectionList");
+
+    const galleryGrid =
+      document.getElementById("galleryGrid");
+
+    const params =
+      new URLSearchParams(window.location.search);
+
+    const personId =
+      params.get("id");
+
+    function getInitials(name) {
+      return (name || "?")
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map(part => part.charAt(0).toUpperCase())
+        .join("");
+    }
+
+    function getPublicPhotoUrl(storagePath) {
+      const { data } = supabase.storage
+        .from("public-family-media")
+        .getPublicUrl(storagePath);
+
+      return data.publicUrl;
+    }
+
+    function showProfilePhoto(person, profileMedia) {
+      photoContainer.innerHTML = "";
+
+      if (profileMedia?.storage_path) {
+        const image =
+          document.createElement("img");
+
+        image.className = "profile-photo";
+        image.src =
+          getPublicPhotoUrl(
+            profileMedia.storage_path
+          );
+
+        image.alt =
+          `${person.display_name} profile`;
+
+        photoContainer.appendChild(image);
+        return;
+      }
+
+      const initials =
+        document.createElement("div");
+
+      initials.className = "initials-photo";
+      initials.textContent =
+        getInitials(person.display_name);
+
+      photoContainer.appendChild(initials);
+    }
+
+    async function loadPerson() {
+      if (!personId) {
+        throw new Error(
+          "No family member was selected."
+        );
+      }
+
+      const { data: person, error: personError } =
+        await supabase
+          .from("people")
+          .select(`
+            id,
+            display_name,
+            biography,
+            is_living,
+            profile_media_id
+          `)
+          .eq("id", personId)
+          .single();
+
+      if (personError) {
+        throw personError;
+      }
+
+      let profileMedia = null;
+
+      if (person.profile_media_id) {
+        const { data, error } =
+          await supabase
+            .from("media")
+            .select(
+              "id, title, caption, storage_path"
+            )
+            .eq(
+              "id",
+              person.profile_media_id
+            )
+            .maybeSingle();
+
+        if (error) {
+          throw error;
+        }
+
+        profileMedia = data;
+      }
+
+      const { data: tags, error: tagsError } =
+        await supabase
+          .from("media_people")
+          .select(`
+            is_profile_photo,
+            media (
+              id,
+              title,
+              caption,
+              storage_path,
+              is_public,
+              is_approved
+            )
+          `)
+          .eq("person_id", personId);
+
+      if (tagsError) {
+        throw tagsError;
+      }
+
+      const { data: relationships, error: relationshipError } =
+        await supabase
+          .from("relationships")
+          .select(`
+            relationship_type,
+            related_person:people!relationships_related_person_id_fkey (
+              id,
+              display_name,
+              is_living
+            )
+          `)
+          .eq("person_id", personId);
+
+      if (relationshipError) {
+        throw relationshipError;
+      }
+
+      renderPerson(
+        person,
+        profileMedia,
+        tags || [],
+        relationships || []
+      );
+    }
+
+    function renderPerson(
+      person,
+      profileMedia,
+      tags,
+      relationships
+    ) {
+      showProfilePhoto(
+        person,
+        profileMedia
+      );
+
+      profileName.textContent =
+        person.display_name;
+
+      profileStatus.textContent =
+        person.is_living
+          ? "Living family member"
+          : "Remembered family member";
+
+      biography.textContent =
+        person.biography ||
+        "A biography has not been added yet.";
+
+      connectionList.innerHTML = "";
+
+      if (!relationships.length) {
+        connectionList.textContent =
+          "No family connections are available.";
+      } else {
+        relationships.forEach(connection => {
+          const row =
+            document.createElement("p");
+
+          row.innerHTML = `
+            <strong>
+              ${connection.relationship_type}:
+            </strong>
+            ${connection.related_person?.display_name || "Unknown relative"}
+          `;
+
+          connectionList.appendChild(row);
+        });
+      }
+
+      galleryGrid.innerHTML = "";
+
+      const approvedPhotos = tags
+        .map(tag => tag.media)
+        .filter(media =>
+          media &&
+          media.is_public &&
+          media.is_approved &&
+          media.storage_path
+        );
+
+      if (!approvedPhotos.length) {
+        galleryGrid.textContent =
+          "No approved photographs have been added yet.";
+      } else {
+        approvedPhotos.forEach(media => {
+          const card =
+            document.createElement("article");
+
+          card.className =
+            "gallery-card";
+
+          const image =
+            document.createElement("img");
+
+          image.src =
+            getPublicPhotoUrl(
+              media.storage_path
+            );
+
+          image.alt =
+            media.caption ||
+            media.title ||
+            person.display_name;
+
+          const details =
+            document.createElement("div");
+
+          const title =
+            document.createElement("strong");
+
+          title.textContent =
+            media.title ||
+            "Family photograph";
+
+          const caption =
+            document.createElement("p");
+
+          caption.textContent =
+            media.caption || "";
+
+          details.append(
+            title,
+            caption
+          );
+
+          card.append(
+            image,
+            details
+          );
+
+          galleryGrid.appendChild(card);
+        });
+      }
+
+      message.textContent = "";
+      profileContent.hidden = false;
+    }
+
+    try {
+      await loadPerson();
+    } catch (error) {
+      console.error(error);
+
+      message.textContent =
+        error.message ||
+        "The family profile could not be loaded.";
+
+      message.classList.add("error");
+    }
+  </script>
+</body>
+</html>

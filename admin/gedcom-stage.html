@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta name="robots" content="noindex,nofollow">
+
+  <title>Stage GEDCOM | Wells Family Archive</title>
+
+  <link rel="stylesheet" href="../style.css">
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #f7f5ef;
+      color: #333;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    header {
+      padding: 28px 24px;
+      text-align: center;
+      color: white;
+      background: #234b34;
+    }
+
+    main {
+      width: min(900px, 92%);
+      margin: 35px auto;
+    }
+
+    .panel {
+      padding: 26px;
+      background: white;
+      border: 1px solid #e2ddcf;
+      border-radius: 16px;
+    }
+
+    h2 {
+      color: #234b34;
+    }
+
+    label {
+      display: block;
+      margin: 18px 0 8px;
+      color: #234b34;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #aaa;
+      border-radius: 8px;
+    }
+
+    button,
+    .back-link {
+      display: inline-block;
+      margin-top: 18px;
+      padding: 12px 18px;
+      text-decoration: none;
+      color: white;
+      background: #234b34;
+      border: 0;
+      border-radius: 8px;
+      cursor: pointer;
+      font: inherit;
+      font-weight: bold;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .summary {
+      margin-top: 24px;
+      padding: 18px;
+      background: #f3eddd;
+      border-radius: 12px;
+    }
+
+    .summary p {
+      margin: 8px 0;
+    }
+
+    .message {
+      min-height: 24px;
+      margin-top: 18px;
+    }
+
+    .error {
+      color: #a12828;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Stage GEDCOM Import</h1>
+
+    <p>
+      Save the newest MyHeritage genealogy data for review.
+    </p>
+  </header>
+
+  <main>
+    <section class="panel">
+      <a class="back-link" href="./dashboard.html">
+        ← Back to dashboard
+      </a>
+
+      <label for="gedcomFile">
+        Choose the newest GEDCOM file
+      </label>
+
+      <input
+        id="gedcomFile"
+        type="file"
+        accept=".ged,.gedcom,text/plain"
+      >
+
+      <button id="stageButton" type="button" disabled>
+        Stage GEDCOM for review
+      </button>
+
+      <p id="message" class="message" aria-live="polite"></p>
+
+      <section id="summary" class="summary" hidden>
+        <h2>Staging complete</h2>
+
+        <p>
+          People staged:
+          <strong id="peopleCount">0</strong>
+        </p>
+
+        <p>
+          Relationships staged:
+          <strong id="relationshipCount">0</strong>
+        </p>
+
+        <p>
+          Import job:
+          <strong id="importJobId"></strong>
+        </p>
+
+        <p>
+          The permanent family tree has not been changed.
+        </p>
+      </section>
+    </section>
+  </main>
+
+  <script type="module">
+    import {
+      parseGedcom
+    } from "../scripts/gedcom-parser.js";
+
+    import {
+      stageGedcomImport
+    } from "../scripts/gedcom-staging.js";
+
+    const fileInput =
+      document.getElementById("gedcomFile");
+
+    const stageButton =
+      document.getElementById("stageButton");
+
+    const message =
+      document.getElementById("message");
+
+    const summary =
+      document.getElementById("summary");
+
+    fileInput.addEventListener("change", () => {
+      stageButton.disabled =
+        !fileInput.files?.length;
+
+      summary.hidden = true;
+      message.textContent = "";
+      message.classList.remove("error");
+    });
+
+    stageButton.addEventListener(
+      "click",
+      async () => {
+        const file = fileInput.files?.[0];
+
+        if (!file) {
+          return;
+        }
+
+        stageButton.disabled = true;
+        message.textContent =
+          "Reading and staging GEDCOM…";
+
+        message.classList.remove("error");
+        summary.hidden = true;
+
+        try {
+          const text = await file.text();
+          const parsed = parseGedcom(text);
+
+          if (!parsed.people.length) {
+            throw new Error(
+              "No individual records were found."
+            );
+          }
+
+          const result = await stageGedcomImport({
+            file,
+            parsed
+          });
+
+          document.getElementById(
+            "peopleCount"
+          ).textContent = result.peopleCount;
+
+          document.getElementById(
+            "relationshipCount"
+          ).textContent =
+            result.relationshipCount;
+
+          document.getElementById(
+            "importJobId"
+          ).textContent =
+            result.importJobId;
+
+          summary.hidden = false;
+
+          message.textContent =
+            "GEDCOM staged successfully. No permanent records were changed.";
+        } catch (error) {
+          console.error(error);
+
+          message.textContent =
+            error.message ||
+            "The GEDCOM could not be staged.";
+
+          message.classList.add("error");
+        } finally {
+          stageButton.disabled = false;
+        }
+      }
+    );
+  </script>
+</body>
+</html>

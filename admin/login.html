@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta name="robots" content="noindex,nofollow">
+
+  <title>Admin Login | Wells Family Archive</title>
+
+  <link rel="stylesheet" href="../style.css">
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background: #f7f5ef;
+      color: #333;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .login-shell {
+      display: grid;
+      min-height: 100vh;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .login-card {
+      width: min(460px, 100%);
+      padding: 34px;
+      background: white;
+      border: 1px solid #e2ddcf;
+      border-radius: 18px;
+      box-shadow: 0 16px 45px rgba(35, 75, 52, 0.12);
+    }
+
+    .eyebrow {
+      margin: 0;
+      color: #9a7521;
+      font-size: 0.78rem;
+      font-weight: bold;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 6px 0 10px;
+      color: #234b34;
+    }
+
+    .intro {
+      margin-bottom: 24px;
+      color: #555;
+      line-height: 1.6;
+    }
+
+    form {
+      display: grid;
+      gap: 10px;
+    }
+
+    label {
+      margin-top: 8px;
+      color: #234b34;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 13px 14px;
+      border: 1px solid #aaa;
+      border-radius: 8px;
+      font: inherit;
+    }
+
+    input:focus {
+      outline: 3px solid rgba(179, 139, 45, 0.25);
+      border-color: #b38b2d;
+    }
+
+    button {
+      margin-top: 14px;
+      padding: 13px 18px;
+      color: white;
+      background: #234b34;
+      border: 0;
+      border-radius: 8px;
+      cursor: pointer;
+      font: inherit;
+      font-weight: bold;
+    }
+
+    button:disabled {
+      cursor: wait;
+      opacity: 0.65;
+    }
+
+    .message {
+      min-height: 24px;
+      margin: 18px 0;
+    }
+
+    .error {
+      color: #a12828;
+    }
+
+    .back-link {
+      color: #234b34;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="login-shell">
+    <section class="login-card" aria-labelledby="loginTitle">
+      <p class="eyebrow">Private administration</p>
+
+      <h1 id="loginTitle">Wells Family Archive</h1>
+
+      <p class="intro">
+        Sign in with your authorized archive administrator account.
+      </p>
+
+      <form id="loginForm">
+        <label for="email">Email address</label>
+
+        <input
+          id="email"
+          type="email"
+          autocomplete="email"
+          required
+        >
+
+        <label for="password">Password</label>
+
+        <input
+          id="password"
+          type="password"
+          autocomplete="current-password"
+          required
+        >
+
+        <button id="loginButton" type="submit">
+          Sign in
+        </button>
+      </form>
+
+      <p id="loginMessage" class="message" aria-live="polite"></p>
+
+      <a class="back-link" href="../index.html">
+        ← Return to the public archive
+      </a>
+    </section>
+  </main>
+
+  <script type="module">
+    import { createClient } from
+      "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+    import {
+      SUPABASE_URL,
+      SUPABASE_PUBLISHABLE_KEY
+    } from "../scripts/supabase-config.js";
+
+    const supabase = createClient(
+      SUPABASE_URL,
+      SUPABASE_PUBLISHABLE_KEY,
+      {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true
+        }
+      }
+    );
+
+    const form = document.getElementById("loginForm");
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+    const loginButton = document.getElementById("loginButton");
+    const message = document.getElementById("loginMessage");
+
+    async function verifyAdministrator(userId) {
+      const { data, error } = await supabase
+        .from("admin_profiles")
+        .select("user_id, display_name, role, is_active")
+        .eq("user_id", userId)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (error) {
+        throw error;
+      }
+
+      return data;
+    }
+
+    async function redirectExistingSession() {
+      const { data, error } = await supabase.auth.getSession();
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      if (!data.session?.user) {
+        return;
+      }
+
+      try {
+        const admin = await verifyAdministrator(
+          data.session.user.id
+        );
+
+        if (admin) {
+          window.location.replace("./dashboard.html");
+        } else {
+          await supabase.auth.signOut();
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      loginButton.disabled = true;
+      message.textContent = "Signing in…";
+      message.classList.remove("error");
+
+      try {
+        const { data, error } =
+          await supabase.auth.signInWithPassword({
+            email: emailInput.value.trim(),
+            password: passwordInput.value
+          });
+
+        if (error) {
+          throw error;
+        }
+
+        const admin = await verifyAdministrator(
+          data.user.id
+        );
+
+        if (!admin) {
+          await supabase.auth.signOut();
+
+          throw new Error(
+            "This account is not an active archive administrator."
+          );
+        }
+
+        window.location.replace("./dashboard.html");
+      } catch (error) {
+        console.error(error);
+
+        message.textContent =
+          error.message || "The sign-in attempt was unsuccessful.";
+
+        message.classList.add("error");
+        loginButton.disabled = false;
+      }
+    });
+
+    redirectExistingSession();
+  </script>
+</body>
+</html>

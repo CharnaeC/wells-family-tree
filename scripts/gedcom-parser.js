@@ -72,18 +72,26 @@ export function parseGedcom(text) {
     }
 
     if (currentRecord.type === "FAM") {
-      parseFamilyLine(line, currentRecord);
+      parseFamilyLine(
+        line,
+        currentRecord
+      );
     }
   }
 
-  const relationships = buildRelationships(families);
+  const relationships =
+    buildRelationships(families);
 
   return {
-    people: Array.from(people.values()).map(person => ({
+    people: Array.from(
+      people.values()
+    ).map(person => ({
       ...person,
       isLiving: !person.deceased
     })),
+
     families,
+
     relationships
   };
 }
@@ -94,25 +102,39 @@ function parseIndividualLine(
   setEvent,
   getEvent
 ) {
-  const nameMatch = line.match(/^1\s+NAME\s+(.+)$/);
+  const nameMatch =
+    line.match(/^1\s+NAME\s+(.+)$/);
 
   if (nameMatch) {
-    const parsedName = parseName(nameMatch[1]);
+    const parsedName =
+      parseName(nameMatch[1]);
 
-    person.displayName = parsedName.displayName;
-    person.firstName = parsedName.firstName;
-    person.middleName = parsedName.middleName;
-    person.lastName = parsedName.lastName;
-    person.suffix = parsedName.suffix;
+    person.displayName =
+      parsedName.displayName;
+
+    person.firstName =
+      parsedName.firstName;
+
+    person.middleName =
+      parsedName.middleName;
+
+    person.lastName =
+      parsedName.lastName;
+
+    person.suffix =
+      parsedName.suffix;
 
     setEvent(null);
     return;
   }
 
-  const sexMatch = line.match(/^1\s+SEX\s+(.+)$/);
+  const sexMatch =
+    line.match(/^1\s+SEX\s+(.+)$/);
 
   if (sexMatch) {
-    person.sex = sexMatch[1].trim();
+    person.sex =
+      sexMatch[1].trim();
+
     setEvent(null);
     return;
   }
@@ -128,58 +150,86 @@ function parseIndividualLine(
     return;
   }
 
-  const dateMatch = line.match(/^2\s+DATE\s+(.+)$/);
+  const dateMatch =
+    line.match(/^2\s+DATE\s+(.+)$/);
 
   if (dateMatch) {
     if (getEvent() === "birth") {
-      person.birthDateText = dateMatch[1].trim();
+      person.birthDateText =
+        dateMatch[1].trim();
     }
 
     if (getEvent() === "death") {
-      person.deathDateText = dateMatch[1].trim();
+      person.deathDateText =
+        dateMatch[1].trim();
+
       person.deceased = true;
     }
 
     return;
   }
 
-  const placeMatch = line.match(/^2\s+PLAC\s+(.+)$/);
+  const placeMatch =
+    line.match(/^2\s+PLAC\s+(.+)$/);
 
   if (placeMatch) {
     if (getEvent() === "birth") {
-      person.birthPlace = placeMatch[1].trim();
+      person.birthPlace =
+        placeMatch[1].trim();
     }
 
     if (getEvent() === "death") {
-      person.deathPlace = placeMatch[1].trim();
+      person.deathPlace =
+        placeMatch[1].trim();
+
       person.deceased = true;
     }
   }
 }
 
-function parseFamilyLine(line, family) {
-  const husbandMatch = line.match(/^1\s+HUSB\s+(@[^@]+@)$/);
+function parseFamilyLine(
+  line,
+  family
+) {
+  const husbandMatch =
+    line.match(
+      /^1\s+HUSB\s+(@[^@]+@)$/
+    );
 
   if (husbandMatch) {
-    family.husbandId = cleanId(husbandMatch[1]);
+    family.husbandId =
+      cleanId(husbandMatch[1]);
+
     return;
   }
 
-  const wifeMatch = line.match(/^1\s+WIFE\s+(@[^@]+@)$/);
+  const wifeMatch =
+    line.match(
+      /^1\s+WIFE\s+(@[^@]+@)$/
+    );
 
   if (wifeMatch) {
-    family.wifeId = cleanId(wifeMatch[1]);
+    family.wifeId =
+      cleanId(wifeMatch[1]);
+
     return;
   }
 
-  const childMatch = line.match(/^1\s+CHIL\s+(@[^@]+@)$/);
+  const childMatch =
+    line.match(
+      /^1\s+CHIL\s+(@[^@]+@)$/
+    );
 
   if (childMatch) {
-    family.childIds.push(cleanId(childMatch[1]));
+    family.childIds.push(
+      cleanId(childMatch[1])
+    );
   }
 }
 
-function buildRelationships(families) {
+function buildRelationships(
+  families
+) {
   const relationships = [];
   const seen = new Set();
 
@@ -188,12 +238,17 @@ function buildRelationships(families) {
     relatedPersonGedcomId,
     relationshipType
   ) {
-    if (!personGedcomId || !relatedPersonGedcomId) {
+    if (
+      !personGedcomId ||
+      !relatedPersonGedcomId
+    ) {
       return;
     }
 
     const key =
-      `${personGedcomId}|${relatedPersonGedcomId}|${relationshipType}`;
+      `${personGedcomId}|` +
+      `${relatedPersonGedcomId}|` +
+      `${relationshipType}`;
 
     if (seen.has(key)) {
       return;
@@ -209,7 +264,10 @@ function buildRelationships(families) {
   }
 
   families.forEach(family => {
-    if (family.husbandId && family.wifeId) {
+    if (
+      family.husbandId &&
+      family.wifeId
+    ) {
       addRelationship(
         family.husbandId,
         family.wifeId,
@@ -223,35 +281,53 @@ function buildRelationships(families) {
       );
     }
 
-    family.childIds.forEach(childId => {
-      if (family.husbandId) {
-        addRelationship(
-          family.husbandId,
-          childId,
-          "parent"
-        );
+    family.childIds.forEach(
+      childId => {
+        if (family.husbandId) {
+          /*
+            On the father's profile,
+            the related person is his child.
+          */
+          addRelationship(
+            family.husbandId,
+            childId,
+            "child"
+          );
 
-        addRelationship(
-          childId,
-          family.husbandId,
-          "child"
-        );
+          /*
+            On the child's profile,
+            the related person is their parent.
+          */
+          addRelationship(
+            childId,
+            family.husbandId,
+            "parent"
+          );
+        }
+
+        if (family.wifeId) {
+          /*
+            On the mother's profile,
+            the related person is her child.
+          */
+          addRelationship(
+            family.wifeId,
+            childId,
+            "child"
+          );
+
+          /*
+            On the child's profile,
+            the related person is their parent.
+          */
+          addRelationship(
+            childId,
+            family.wifeId,
+            "parent"
+          );
+        }
       }
-
-      if (family.wifeId) {
-        addRelationship(
-          family.wifeId,
-          childId,
-          "parent"
-        );
-
-        addRelationship(
-          childId,
-          family.wifeId,
-          "child"
-        );
-      }
-    });
+    );
   });
 
   return relationships;
@@ -262,19 +338,30 @@ function parseName(rawName) {
     .replace(/\s+/g, " ")
     .trim();
 
-  const surnameMatch = normalized.match(/\/([^/]+)\//);
+  const surnameMatch =
+    normalized.match(/\/([^/]+)\//);
+
   const lastName = surnameMatch
     ? surnameMatch[1].trim()
     : "";
 
-  const withoutSurnameMarkers = normalized
-    .replace(/\/[^/]+\//, lastName)
-    .replace(/\s+/g, " ")
-    .trim();
+  const withoutSurnameMarkers =
+    normalized
+      .replace(
+        /\/[^/]+\//,
+        lastName
+      )
+      .replace(/\s+/g, " ")
+      .trim();
 
-  const parts = withoutSurnameMarkers.split(" ").filter(Boolean);
+  const parts =
+    withoutSurnameMarkers
+      .split(" ")
+      .filter(Boolean);
 
-  const firstName = parts[0] || "";
+  const firstName =
+    parts[0] || "";
+
   const suffixes = new Set([
     "Jr.",
     "Jr",
@@ -287,28 +374,45 @@ function parseName(rawName) {
 
   let suffix = "";
 
-  if (parts.length && suffixes.has(parts[parts.length - 1])) {
+  if (
+    parts.length &&
+    suffixes.has(
+      parts[parts.length - 1]
+    )
+  ) {
     suffix = parts.pop();
   }
 
-  const middleParts = parts.slice(1);
+  const middleParts =
+    parts.slice(1);
 
   if (
     lastName &&
-    middleParts[middleParts.length - 1] === lastName
+    middleParts[
+      middleParts.length - 1
+    ] === lastName
   ) {
     middleParts.pop();
   }
 
   return {
-    displayName: withoutSurnameMarkers || "Unknown",
+    displayName:
+      withoutSurnameMarkers ||
+      "Unknown",
+
     firstName,
-    middleName: middleParts.join(" "),
+
+    middleName:
+      middleParts.join(" "),
+
     lastName,
+
     suffix
   };
 }
 
 function cleanId(value) {
-  return value.replaceAll("@", "").trim();
+  return value
+    .replaceAll("@", "")
+    .trim();
 }

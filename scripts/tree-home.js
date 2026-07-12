@@ -1,3 +1,15 @@
+import {
+  loadPublicProfileMap
+} from "./public-family-data.js";
+
+import {
+  restoreExpandedTreeState
+} from "./tree-state.js";
+
+import {
+  openTreeProfile,
+  getTreeProfilePhoto
+} from "./tree-profiles.js";
 "use strict";
 
 const FOUNDERS = [

@@ -1,12 +1,5 @@
 "use strict";
 
-/*
-  Stage 2 uses fictional sample information.
-
-  During Stage 3, this sample data will be replaced with a
-  privacy-safe version of the Wells family information.
-*/
-
 const defaultPhoto =
   "data:image/svg+xml;charset=UTF-8," +
   encodeURIComponent(`
@@ -16,74 +9,6 @@ const defaultPhoto =
       <path d="M32 164c8-42 32-63 58-63s50 21 58 63" fill="#234b34"/>
     </svg>
   `);
-
-const familyData = {
-  id: "james-wells",
-  displayName: "James Wells",
-  fullName: "James Wells",
-  living: false,
-  biography:
-    "This is sample information used to demonstrate the Wells Family Tree website.",
-  photo: defaultPhoto,
-  spouse: "Margaret Wells",
-  parents: [],
-  childrenNames: ["Robert Wells", "Linda Wells"],
-  children: [
-    {
-      id: "robert-wells",
-      displayName: "Robert Wells",
-      fullName: "Robert Wells",
-      living: false,
-      biography:
-        "Robert’s sample profile demonstrates how biographies and family connections will appear.",
-      photo: defaultPhoto,
-      spouse: "Denise Wells",
-      parents: ["James Wells", "Margaret Wells"],
-      childrenNames: ["Charnae C.", "Michael W."],
-      children: [
-        {
-          id: "charnae-c",
-          displayName: "Charnae C.",
-          fullName: "Charnae Carr",
-          living: true,
-          biography:
-            "This sample biography shows where an approved biography for a living relative can appear.",
-          photo: defaultPhoto,
-          spouse: "",
-          parents: ["Robert Wells", "Denise Wells"],
-          childrenNames: [],
-          children: []
-        },
-        {
-          id: "michael-w",
-          displayName: "Michael W.",
-          fullName: "Michael Wells",
-          living: true,
-          biography:
-            "This is another sample profile for a living family member.",
-          photo: defaultPhoto,
-          spouse: "",
-          parents: ["Robert Wells", "Denise Wells"],
-          childrenNames: [],
-          children: []
-        }
-      ]
-    },
-    {
-      id: "linda-wells",
-      displayName: "Linda Wells",
-      fullName: "Linda Wells",
-      living: false,
-      biography:
-        "Linda’s sample profile illustrates another branch of the family tree.",
-      photo: defaultPhoto,
-      spouse: "",
-      parents: ["James Wells", "Margaret Wells"],
-      childrenNames: [],
-      children: []
-    }
-  ]
-};
 
 const treeContainer = document.getElementById("familyTree");
 const searchInput = document.getElementById("familySearch");
@@ -100,43 +25,103 @@ const profileName = document.getElementById("profileName");
 const profileBiography = document.getElementById("profileBiography");
 const profileConnections = document.getElementById("profileConnections");
 
+let familyData = null;
+let peopleById = new Map();
 let isEverythingExpanded = true;
 
-function createPersonNode(person) {
+async function loadFamilyData() {
+  try {
+    const response = await fetch("data/family.json", {
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      throw new Error(`Could not load family.json (${response.status})`);
+    }
+
+    familyData = await response.json();
+
+    if (!Array.isArray(familyData.people)) {
+      throw new Error("family.json does not contain a people list.");
+    }
+
+    peopleById = new Map(
+      familyData.people.map((person) => [person.id, person])
+    );
+
+    renderTree();
+    searchMessage.textContent =
+      `${familyData.people.length} relatives are currently displayed.`;
+  } catch (error) {
+    console.error(error);
+
+    treeContainer.innerHTML = `
+      <p class="tree-error">
+        The family data could not be loaded. Confirm that
+        <strong>data/family.json</strong> exists in the repository.
+      </p>
+    `;
+
+    searchMessage.textContent = error.message;
+  }
+}
+
+function getPersonName(personId) {
+  return peopleById.get(personId)?.displayName || "Unknown relative";
+}
+
+function findRootPeople() {
+  const childIds = new Set();
+
+  familyData.people.forEach((person) => {
+    person.children?.forEach((childId) => childIds.add(childId));
+  });
+
+  const roots = familyData.people.filter(
+    (person) => !childIds.has(person.id)
+  );
+
+  return roots.length > 0 ? roots : familyData.people.slice(0, 1);
+}
+
+function createPersonNode(person, visited = new Set()) {
   const listItem = document.createElement("li");
   listItem.className = "tree-person-item";
   listItem.dataset.personId = person.id;
   listItem.dataset.searchName =
-    `${person.displayName} ${person.fullName}`.toLowerCase();
+    `${person.displayName} ${person.profileName || ""}`.toLowerCase();
 
   const nodeRow = document.createElement("div");
   nodeRow.className = "tree-node-row";
 
-  const hasChildren =
-    Array.isArray(person.children) && person.children.length > 0;
+  const childPeople = (person.children || [])
+    .map((childId) => peopleById.get(childId))
+    .filter(Boolean)
+    .filter((child) => !visited.has(child.id));
+
+  const hasChildren = childPeople.length > 0;
 
   if (hasChildren) {
     const toggleButton = document.createElement("button");
     toggleButton.type = "button";
     toggleButton.className = "branch-toggle";
     toggleButton.textContent = "−";
+    toggleButton.setAttribute("aria-expanded", "true");
     toggleButton.setAttribute(
       "aria-label",
       `Collapse the branch under ${person.displayName}`
     );
-    toggleButton.setAttribute("aria-expanded", "true");
 
     nodeRow.appendChild(toggleButton);
   } else {
-    const togglePlaceholder = document.createElement("span");
-    togglePlaceholder.className = "branch-toggle-placeholder";
-    nodeRow.appendChild(togglePlaceholder);
+    const placeholder = document.createElement("span");
+    placeholder.className = "branch-toggle-placeholder";
+    nodeRow.appendChild(placeholder);
   }
 
   const personButton = document.createElement("button");
   personButton.type = "button";
   personButton.className = "person-node";
-  personButton.dataset.personId = person.id;
 
   const photo = document.createElement("img");
   photo.src = person.photo || defaultPhoto;
@@ -159,16 +144,17 @@ function createPersonNode(person) {
   nodeRow.appendChild(personButton);
   listItem.appendChild(nodeRow);
 
-  personButton.addEventListener("click", () => {
-    openProfile(person);
-  });
+  personButton.addEventListener("click", () => openProfile(person));
 
   if (hasChildren) {
     const childList = document.createElement("ul");
     childList.className = "tree-children";
 
-    person.children.forEach((child) => {
-      childList.appendChild(createPersonNode(child));
+    const nextVisited = new Set(visited);
+    nextVisited.add(person.id);
+
+    childPeople.forEach((child) => {
+      childList.appendChild(createPersonNode(child, nextVisited));
     });
 
     listItem.appendChild(childList);
@@ -176,21 +162,12 @@ function createPersonNode(person) {
     const toggleButton = nodeRow.querySelector(".branch-toggle");
 
     toggleButton.addEventListener("click", () => {
-      const currentlyExpanded =
+      const expanded =
         toggleButton.getAttribute("aria-expanded") === "true";
 
-      childList.hidden = currentlyExpanded;
-      toggleButton.textContent = currentlyExpanded ? "+" : "−";
-      toggleButton.setAttribute(
-        "aria-expanded",
-        String(!currentlyExpanded)
-      );
-      toggleButton.setAttribute(
-        "aria-label",
-        `${currentlyExpanded ? "Expand" : "Collapse"} the branch under ${
-          person.displayName
-        }`
-      );
+      childList.hidden = expanded;
+      toggleButton.textContent = expanded ? "+" : "−";
+      toggleButton.setAttribute("aria-expanded", String(!expanded));
     });
   }
 
@@ -202,52 +179,40 @@ function renderTree() {
 
   const rootList = document.createElement("ul");
   rootList.className = "tree-root";
-  rootList.appendChild(createPersonNode(familyData));
+
+  findRootPeople().forEach((rootPerson) => {
+    rootList.appendChild(createPersonNode(rootPerson));
+  });
 
   treeContainer.appendChild(rootList);
-}
-
-function flattenFamily(person, results = []) {
-  results.push(person);
-
-  if (Array.isArray(person.children)) {
-    person.children.forEach((child) => {
-      flattenFamily(child, results);
-    });
-  }
-
-  return results;
-}
-
-function expandAncestorBranches(element) {
-  let currentElement = element.parentElement;
-
-  while (currentElement && currentElement !== treeContainer) {
-    if (currentElement.classList.contains("tree-children")) {
-      currentElement.hidden = false;
-
-      const parentItem = currentElement.closest(".tree-person-item");
-
-      if (parentItem) {
-        const toggle = parentItem.querySelector(
-          ":scope > .tree-node-row .branch-toggle"
-        );
-
-        if (toggle) {
-          toggle.textContent = "−";
-          toggle.setAttribute("aria-expanded", "true");
-        }
-      }
-    }
-
-    currentElement = currentElement.parentElement;
-  }
 }
 
 function clearHighlights() {
   document.querySelectorAll(".person-node.search-match").forEach((node) => {
     node.classList.remove("search-match");
   });
+}
+
+function expandAncestorBranches(element) {
+  let current = element.parentElement;
+
+  while (current && current !== treeContainer) {
+    if (current.classList.contains("tree-children")) {
+      current.hidden = false;
+
+      const parentItem = current.closest(".tree-person-item");
+      const toggle = parentItem?.querySelector(
+        ":scope > .tree-node-row .branch-toggle"
+      );
+
+      if (toggle) {
+        toggle.textContent = "−";
+        toggle.setAttribute("aria-expanded", "true");
+      }
+    }
+
+    current = current.parentElement;
+  }
 }
 
 function searchFamily() {
@@ -257,69 +222,68 @@ function searchFamily() {
 
   if (!searchTerm) {
     searchMessage.textContent = "Enter a name to search.";
-    searchInput.focus();
     return;
   }
 
-  const matchingItems = Array.from(
+  const matches = Array.from(
     document.querySelectorAll(".tree-person-item")
-  ).filter((item) => {
-    return item.dataset.searchName.includes(searchTerm);
-  });
+  ).filter((item) => item.dataset.searchName.includes(searchTerm));
 
-  if (matchingItems.length === 0) {
+  if (matches.length === 0) {
     searchMessage.textContent =
       `No relatives were found for “${searchInput.value.trim()}.”`;
     return;
   }
 
-  matchingItems.forEach((item) => {
+  matches.forEach((item) => {
     expandAncestorBranches(item);
 
     const personNode = item.querySelector(
       ":scope > .tree-node-row .person-node"
     );
 
-    if (personNode) {
-      personNode.classList.add("search-match");
-    }
+    personNode?.classList.add("search-match");
   });
 
-  const firstMatch = matchingItems[0].querySelector(
-    ":scope > .tree-node-row .person-node"
-  );
-
-  firstMatch?.scrollIntoView({
-    behavior: "smooth",
-    block: "center"
-  });
+  matches[0]
+    ?.querySelector(":scope > .tree-node-row .person-node")
+    ?.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
 
   searchMessage.textContent =
-    `${matchingItems.length} relative${
-      matchingItems.length === 1 ? "" : "s"
-    } found.`;
+    `${matches.length} relative${matches.length === 1 ? "" : "s"} found.`;
 }
 
 function clearSearch() {
   searchInput.value = "";
-  searchMessage.textContent = "";
+  searchMessage.textContent =
+    `${familyData?.people?.length || 0} relatives are currently displayed.`;
   clearHighlights();
   searchInput.focus();
+}
+
+function addConnection(label, ids) {
+  if (!Array.isArray(ids) || ids.length === 0) return;
+
+  const row = document.createElement("p");
+  const strong = document.createElement("strong");
+
+  strong.textContent = `${label}: `;
+
+  row.appendChild(strong);
+  row.appendChild(
+    document.createTextNode(ids.map(getPersonName).join(", "))
+  );
+
+  profileConnections.appendChild(row);
 }
 
 function openProfile(person) {
   profilePhoto.src = person.photo || defaultPhoto;
   profilePhoto.alt = `${person.displayName} profile`;
-
-  /*
-    Living relatives use the privacy-safe display name.
-
-    Their legal/full last name is not displayed in this public
-    sample profile.
-  */
-  profileName.textContent = person.living
-    ? person.displayName
-    : person.fullName;
+  profileName.textContent = person.profileName || person.displayName;
 
   profileStatus.textContent = person.living
     ? "Living family member"
@@ -331,32 +295,44 @@ function openProfile(person) {
   profileConnections.innerHTML = "";
 
   addConnection("Parents", person.parents);
-  addConnection(
-    "Spouse",
-    person.spouse ? [person.spouse] : []
-  );
-  addConnection("Children", person.childrenNames);
+  addConnection("Spouse", person.spouses);
+  addConnection("Children", person.children);
+
+  if (!person.living) {
+    if (person.birth?.date || person.birth?.place) {
+      const birthDetails = [
+        person.birth?.date,
+        person.birth?.place
+      ].filter(Boolean);
+
+      addTextDetail("Born", birthDetails.join(" — "));
+    }
+
+    if (person.death?.date || person.death?.place) {
+      const deathDetails = [
+        person.death?.date,
+        person.death?.place
+      ].filter(Boolean);
+
+      addTextDetail("Died", deathDetails.join(" — "));
+    }
+  }
 
   profileModal.hidden = false;
   document.body.classList.add("modal-open");
   closeProfileButton.focus();
 }
 
-function addConnection(label, values) {
-  if (!Array.isArray(values) || values.length === 0) {
-    return;
-  }
+function addTextDetail(label, text) {
+  if (!text) return;
 
-  const connectionRow = document.createElement("p");
-  const labelElement = document.createElement("strong");
+  const row = document.createElement("p");
+  const strong = document.createElement("strong");
 
-  labelElement.textContent = `${label}: `;
-  connectionRow.appendChild(labelElement);
-  connectionRow.appendChild(
-    document.createTextNode(values.join(", "))
-  );
+  strong.textContent = `${label}: `;
+  row.append(strong, document.createTextNode(text));
 
-  profileConnections.appendChild(connectionRow);
+  profileConnections.appendChild(row);
 }
 
 function closeProfile() {
@@ -365,16 +341,13 @@ function closeProfile() {
 }
 
 function toggleAllBranches() {
-  const childLists = document.querySelectorAll(".tree-children");
-  const toggleButtons = document.querySelectorAll(".branch-toggle");
-
   isEverythingExpanded = !isEverythingExpanded;
 
-  childLists.forEach((list) => {
+  document.querySelectorAll(".tree-children").forEach((list) => {
     list.hidden = !isEverythingExpanded;
   });
 
-  toggleButtons.forEach((button) => {
+  document.querySelectorAll(".branch-toggle").forEach((button) => {
     button.textContent = isEverythingExpanded ? "−" : "+";
     button.setAttribute(
       "aria-expanded",
@@ -393,15 +366,11 @@ expandAllButton.addEventListener("click", toggleAllBranches);
 closeProfileButton.addEventListener("click", closeProfile);
 
 searchInput.addEventListener("keydown", (event) => {
-  if (event.key === "Enter") {
-    searchFamily();
-  }
+  if (event.key === "Enter") searchFamily();
 });
 
 profileModal.addEventListener("click", (event) => {
-  if (event.target === profileModal) {
-    closeProfile();
-  }
+  if (event.target === profileModal) closeProfile();
 });
 
 document.addEventListener("keydown", (event) => {
@@ -410,8 +379,4 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-renderTree();
-
-const allPeople = flattenFamily(familyData);
-searchMessage.textContent =
-  `${allPeople.length} sample relatives are currently displayed.`;
+loadFamilyData();

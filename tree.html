@@ -11,7 +11,7 @@
 <body>
 <header class="hero tree-hero">
   <h1>🌳 Wells Family Tree</h1>
-  <p class="tagline">Select a child to reveal their descendant line</p>
+  <p class="tagline">Select a relative to reveal the next generation</p>
   <nav>
     <a href="index.html">Home</a>
     <a href="tree.html" aria-current="page">Family Tree</a>
@@ -19,9 +19,9 @@
     <a href="gallery.html">Gallery</a>
   </nav>
 </header>
-<main class="tree-page inline-tree-page">
+<main class="tree-page nested-tree-page">
   <section class="tree-introduction">
-    <p>Nathaniel Wells and William Wells begin the tree below. Select one of their children to expand or collapse that complete family line.</p>
+    <p>Nathaniel Wells and William Wells begin the tree below. Select any child to reveal the next generation, then keep selecting relatives to continue down that line.</p>
   </section>
   <section class="tree-tools">
     <label for="familySearch">Search the Wells Family Tree</label>
@@ -32,10 +32,8 @@
     </div>
     <p id="searchMessage" class="search-message" aria-live="polite"></p>
   </section>
-  <section id="founderBranches" class="inline-founder-branches">
-    <p>Loading family tree…</p>
-  </section>
-  <p class="branch-home-instruction">Select any child to reveal or hide their descendants ▼</p>
+  <section id="founderBranches" class="nested-founder-branches"><p>Loading family tree…</p></section>
+  <p class="branch-home-instruction">Select a person to reveal or hide their children ▼</p>
 </main>
 <div id="profileModal" class="profile-modal" role="dialog" aria-modal="true" aria-labelledby="profileName" hidden>
   <div class="profile-card">
@@ -44,10 +42,7 @@
     <p id="profileStatus" class="profile-status"></p>
     <h2 id="profileName"></h2>
     <p id="profileBiography"></p>
-    <div class="profile-connections">
-      <h3>Family Connections</h3>
-      <div id="profileConnections"></div>
-    </div>
+    <div class="profile-connections"><h3>Family Connections</h3><div id="profileConnections"></div></div>
   </div>
 </div>
 <footer>Made with ❤️ for the Wells Family</footer>

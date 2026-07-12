@@ -1,0 +1,11 @@
+body{margin:0;font-family:Arial,sans-serif;background:#f7f5ef;color:#333}
+header{background:#234b34;color:#fff;padding:24px}
+main{width:min(780px,92%);margin:30px auto}
+section{background:#fff;border:1px solid #e2ddcf;border-radius:14px;padding:24px}
+label{display:block;margin-top:12px;font-weight:700;color:#234b34}
+input{width:100%;box-sizing:border-box;padding:12px;margin-top:6px}
+button{margin-top:16px;padding:12px 16px;border:0;border-radius:8px;background:#234b34;color:#fff;font-weight:700}
+button:disabled{opacity:.55}
+progress{width:100%;margin-top:18px}
+.hidden{display:none}
+.status{min-height:24px;margin-top:12px}

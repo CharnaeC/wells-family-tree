@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Explore a Wells family descendant branch.">
+  <title>Family Branch | Wells Family Tree</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero tree-hero">
+  <h1>🌳 Wells Family Tree</h1>
+  <p class="tagline">Explore a descendant branch</p>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="tree.html">Family Tree</a>
+    <a href="stories.html">Stories</a>
+    <a href="gallery.html">Gallery</a>
+  </nav>
+</header>
+<main class="tree-page">
+  <nav class="branch-breadcrumbs" aria-label="Breadcrumb">
+    <a href="tree.html">Wells Family Tree</a>
+    <span aria-hidden="true">›</span>
+    <span id="branchBreadcrumbName">Branch</span>
+  </nav>
+  <section class="branch-heading">
+    <p class="eyebrow">Descendant branch</p>
+    <h2 id="branchTitle">Loading branch…</h2>
+    <p id="branchSummary"></p>
+  </section>
+  <section class="tree-tools">
+    <label for="familySearch">Search within this branch</label>
+    <div class="search-row">
+      <input id="familySearch" type="search" placeholder="Enter a relative’s name..." autocomplete="off">
+      <button id="searchButton" type="button">Search</button>
+      <button id="clearSearchButton" type="button" class="secondary-button">Clear</button>
+    </div>
+    <div class="branch-controls">
+      <button id="expandAllButton" type="button" class="secondary-button">Collapse all</button>
+      <a class="secondary-link-button" href="tree.html">Back to branch selection</a>
+    </div>
+    <p id="searchMessage" class="search-message" aria-live="polite"></p>
+  </section>
+  <section class="tree-panel descendant-tree-panel">
+    <div id="familyTree" class="family-tree descendant-tree" aria-label="Descendant family tree">
+      <p>Loading descendant branch…</p>
+    </div>
+  </section>
+</main>
+<div id="profileModal" class="profile-modal" role="dialog" aria-modal="true" aria-labelledby="profileName" hidden>
+  <div class="profile-card">
+    <button id="closeProfileButton" class="profile-close" type="button" aria-label="Close profile">×</button>
+    <img id="profilePhoto" class="profile-photo" src="" alt="">
+    <p id="profileStatus" class="profile-status"></p>
+    <h2 id="profileName"></h2>
+    <p id="profileBiography"></p>
+    <div class="profile-connections">
+      <h3>Family Connections</h3>
+      <div id="profileConnections"></div>
+    </div>
+  </div>
+</div>
+<footer>Made with ❤️ for the Wells Family</footer>
+<script src="scripts/branch.js"></script>
+</body>
+</html>

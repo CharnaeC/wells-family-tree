@@ -57,6 +57,7 @@ const profileConnections = document.getElementById("profileConnections");
 
 let familyData = null;
 let peopleById = new Map();
+let publicProfileMap = new Map();
 
 async function loadFamilyData() {
   try {
@@ -71,10 +72,23 @@ async function loadFamilyData() {
     }
 
     peopleById = new Map(
-      familyData.people.map((person) => [person.id, person])
-    );
+  familyData.people.map((person) => [person.id, person])
+);
 
-    renderFounders();
+try {
+  publicProfileMap =
+    await loadPublicProfileMap();
+} catch (profileError) {
+  console.warn(
+    "Supabase profile data could not be loaded.",
+    profileError
+  );
+
+  publicProfileMap = new Map();
+}
+
+renderFounders();
+restoreExpandedTreeState();
     searchMessage.textContent =
       `${familyData.people.length} relatives are available to search.`;
   } catch (error) {

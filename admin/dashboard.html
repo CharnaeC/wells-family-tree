@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta name="robots" content="noindex,nofollow">
+
+  <title>Admin Dashboard | Wells Family Archive</title>
+
+  <link rel="stylesheet" href="../style.css">
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background: #f7f5ef;
+      color: #333;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .admin-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 28px clamp(20px, 5vw, 70px);
+      color: white;
+      background: #234b34;
+    }
+
+    .admin-header h1 {
+      margin: 5px 0 0;
+    }
+
+    .eyebrow {
+      margin: 0;
+      color: #e7d39c;
+      font-size: 0.78rem;
+      font-weight: bold;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .sign-out-button {
+      padding: 11px 16px;
+      color: #234b34;
+      background: white;
+      border: 0;
+      border-radius: 8px;
+      cursor: pointer;
+      font: inherit;
+      font-weight: bold;
+    }
+
+    .dashboard-shell {
+      width: min(1150px, 92%);
+      margin: 0 auto;
+      padding: 42px 0 70px;
+    }
+
+    .welcome-panel {
+      margin-bottom: 28px;
+      padding: 22px;
+      background: white;
+      border: 1px solid #e2ddcf;
+      border-radius: 14px;
+    }
+
+    .welcome-panel p {
+      margin: 6px 0;
+      line-height: 1.6;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .stat-card {
+      padding: 22px;
+      background: white;
+      border: 1px solid #e2ddcf;
+      border-radius: 14px;
+    }
+
+    .stat-card span {
+      display: block;
+      color: #666;
+      font-size: 0.9rem;
+    }
+
+    .stat-card strong {
+      display: block;
+      margin-top: 8px;
+      color: #234b34;
+      font-size: 2rem;
+    }
+
+    .tools-section {
+      margin-top: 36px;
+    }
+
+    .tools-section h2 {
+      color: #234b34;
+    }
+
+    .tools-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .tool-card {
+      padding: 22px;
+      background: white;
+      border: 1px solid #e2ddcf;
+      border-radius: 14px;
+    }
+
+    .tool-card h3 {
+      margin-top: 0;
+      color: #234b34;
+    }
+
+    .tool-card p {
+      line-height: 1.6;
+    }
+
+    .tool-status {
+      display: inline-block;
+      padding: 5px 9px;
+      color: #725718;
+      background: #f3eddd;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: bold;
+    }
+
+    .message {
+      min-height: 24px;
+      margin-top: 24px;
+      color: #234b34;
+    }
+
+    .error {
+      color: #a12828;
+    }
+
+    .public-link {
+      display: inline-block;
+      margin-top: 12px;
+      color: #234b34;
+      font-weight: bold;
+    }
+
+    @media (max-width: 850px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .tools-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .admin-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .sign-out-button {
+        width: 100%;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="admin-header">
+    <div>
+      <p class="eyebrow">Archive administration</p>
+      <h1>Wells Family Archive</h1>
+    </div>
+
+    <button id="signOutButton" class="sign-out-button" type="button">
+      Sign out
+    </button>
+  </header>
+
+  <main class="dashboard-shell">
+    <section class="welcome-panel">
+      <p id="adminGreeting">
+        Verifying administrator access…
+      </p>
+
+      <p>
+        This dashboard confirms that GitHub Pages can securely connect
+        to your Supabase archive.
+      </p>
+    </section>
+
+    <section class="stats-grid" aria-label="Archive totals">
+      <article class="stat-card">
+        <span>People</span>
+        <strong id="peopleCount">—</strong>
+      </article>
+
+      <article class="stat-card">
+        <span>Approved media</span>
+        <strong id="mediaCount">—</strong>
+      </article>
+
+      <article class="stat-card">
+        <span>Stories</span>
+        <strong id="storiesCount">—</strong>
+      </article>
+
+      <article class="stat-card">
+        <span>Pending submissions</span>
+        <strong id="submissionsCount">—</strong>
+      </article>
+    </section>
+
+    <section class="tools-section">
+      <h2>Archive tools</h2>
+
+      <div class="tools-grid">
+        <article class="tool-card">
+          <h3>GEDCOM Importer</h3>
+          <p>
+            Upload the latest MyHeritage GEDCOM, preview changes and
+            update people and family relationships.
+          </p>
+          <span class="tool-status">Next step</span>
+        </article>
+
+        <article class="tool-card">
+          <h3>Photo Manager</h3>
+          <p>
+            Upload photographs, tag relatives and select profile images.
+          </p>
+          <span class="tool-status">Sprint 2</span>
+        </article>
+
+        <article class="tool-card">
+          <h3>Family Contributions</h3>
+          <p>
+            Review submitted memories, documents, corrections and media.
+          </p>
+          <span class="tool-status">Planned</span>
+        </article>
+      </div>
+    </section>
+
+    <p id="dashboardMessage" class="message" aria-live="polite"></p>
+
+    <a class="public-link" href="../index.html">
+      View the public archive →
+    </a>
+  </main>
+
+  <script type="module">
+    import { createClient } from
+      "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+    import {
+      SUPABASE_URL,
+      SUPABASE_PUBLISHABLE_KEY
+    } from "../scripts/supabase-config.js";
+
+    const supabase = createClient(
+      SUPABASE_URL,
+      SUPABASE_PUBLISHABLE_KEY,
+      {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true
+        }
+      }
+    );
+
+    const greeting = document.getElementById("adminGreeting");
+    const message = document.getElementById("dashboardMessage");
+    const signOutButton = document.getElementById("signOutButton");
+
+    async function requireAdministrator() {
+      const { data: sessionData, error: sessionError } =
+        await supabase.auth.getSession();
+
+      if (sessionError) {
+        throw sessionError;
+      }
+
+      const session = sessionData.session;
+
+      if (!session?.user) {
+        window.location.replace("./login.html");
+        return null;
+      }
+
+      const { data: admin, error: adminError } = await supabase
+        .from("admin_profiles")
+        .select("user_id, display_name, role, is_active")
+        .eq("user_id", session.user.id)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (adminError) {
+        throw adminError;
+      }
+
+      if (!admin) {
+        await supabase.auth.signOut();
+        window.location.replace("./login.html");
+        return null;
+      }
+
+      return {
+        session,
+        admin
+      };
+    }
+
+    async function getCount(tableName, filters = []) {
+      let query = supabase
+        .from(tableName)
+        .select("*", {
+          count: "exact",
+          head: true
+        });
+
+      filters.forEach(({ column, value }) => {
+        query = query.eq(column, value);
+      });
+
+      const { count, error } = await query;
+
+      if (error) {
+        throw error;
+      }
+
+      return count ?? 0;
+    }
+
+    async function loadDashboard() {
+      try {
+        const access = await requireAdministrator();
+
+        if (!access) {
+          return;
+        }
+
+        greeting.textContent =
+          `Welcome, ${
+            access.admin.display_name || "Archive Administrator"
+          }. Your role is ${access.admin.role}.`;
+
+        const [
+          peopleTotal,
+          mediaTotal,
+          storiesTotal,
+          submissionsTotal
+        ] = await Promise.all([
+          getCount("people"),
+
+          getCount("media", [
+            {
+              column: "is_approved",
+              value: true
+            }
+          ]),
+
+          getCount("stories"),
+
+          getCount("submissions", [
+            {
+              column: "status",
+              value: "pending"
+            }
+          ])
+        ]);
+
+        document.getElementById("peopleCount").textContent =
+          peopleTotal;
+
+        document.getElementById("mediaCount").textContent =
+          mediaTotal;
+
+        document.getElementById("storiesCount").textContent =
+          storiesTotal;
+
+        document.getElementById("submissionsCount").textContent =
+          submissionsTotal;
+
+        message.textContent =
+          "GitHub Pages is successfully connected to Supabase.";
+      } catch (error) {
+        console.error(error);
+
+        message.textContent =
+          error.message || "The dashboard could not be loaded.";
+
+        message.classList.add("error");
+      }
+    }
+
+    signOutButton.addEventListener("click", async () => {
+      signOutButton.disabled = true;
+
+      const { error } = await supabase.auth.signOut();
+
+      if (error) {
+        message.textContent = error.message;
+        message.classList.add("error");
+        signOutButton.disabled = false;
+        return;
+      }
+
+      window.location.replace("./login.html");
+    });
+
+    loadDashboard();
+  </script>
+</body>
+</html>
